@@ -1,0 +1,16 @@
+domain: operator.io
+layout:
+- go.kubebuilder.io/v3
+projectName: mysql-operator
+repo: mysql-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.io
+  group: database
+  kind: Mysql
+  path: mysql-operator/api/v1
+  version: v1
+version: "3"
