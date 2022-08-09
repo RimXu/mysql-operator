@@ -19,11 +19,9 @@ package controllers
 import (
 	"context"
 	"k8s.io/apimachinery/pkg/runtime"
+	databasev1 "mysql-operator/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	databasev1 "mysql-operator/api/v1"
 )
 
 // MysqlReconciler reconciles a Mysql object
@@ -35,31 +33,13 @@ type MysqlReconciler struct {
 //+kubebuilder:rbac:groups=database.operator.io,resources=mysqls,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=database.operator.io,resources=mysqls/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=database.operator.io,resources=mysqls/finalizers,verbs=update
-
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Mysql object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.1/pkg/reconcile
-
-// 定义日志分类,分位info/error/debug
-var (
-	infolog  = ctrl.Log.WithName("MySQL-Operator.Info")
-	errlog   = ctrl.Log.WithName("MySQL-Operator.Error")
-	debuglog = ctrl.Log.WithName("MySQL-Operator.Debug")
-)
-
-
 func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	//_ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
-	infolog.Info("Hello MySQL")
-
+	//logrus.Info("Info log")
+	//logrus.Warn("Warn log")
+	//logrus.Error("Error log")
 	return ctrl.Result{}, nil
 }
 
