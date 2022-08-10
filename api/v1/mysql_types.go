@@ -28,8 +28,10 @@ type MysqlSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Mysql. Edit mysql_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// 定义复制配置,默认是true，Operator将生成主从MySQL deployment
+	Replication  bool `json:"replication,true"`
+	// 定义MySQL规格套餐,默认small
+	Combo string `json:"combo,small"`
 }
 
 // MysqlStatus defines the observed state of Mysql

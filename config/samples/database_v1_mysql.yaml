@@ -4,3 +4,5 @@ metadata:
   name: mysql-sample
 spec:
   # TODO(user): Add fields here
+  replication: true
+  combo: large

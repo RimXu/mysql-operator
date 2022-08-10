@@ -17,22 +17,21 @@ limitations under the License.
 package main
 
 import (
-	"os"
 	"github.com/sirupsen/logrus"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	databasev1 "mysql-operator/api/v1"
 	"mysql-operator/controllers"
-
+	"os"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	//+kubebuilder:scaffold:imports
 )
 
 var (
-	scheme   = runtime.NewScheme()
+	scheme = runtime.NewScheme()
 	//setupLog = ctrl.Log.WithName("setup")
 )
 
@@ -45,10 +44,10 @@ func init() {
 	// logrus.SetFormatter(&logrus.TextFormatter{})
 	// 日志格式为保留彩色，完整时间戳，时间格式为微秒
 	logrus.SetFormatter(&logrus.TextFormatter{
-		DisableColors:false,
-		FullTimestamp: true,
+		DisableColors:    false,
+		FullTimestamp:    true,
 		DisableTimestamp: false,
-		TimestampFormat: "2006-01-02 15:03:04.0000",
+		TimestampFormat:  "2006-01-02 15:03:04.0000",
 	})
 }
 
@@ -67,8 +66,8 @@ func main() {
 	//opts.BindFlags(flag.CommandLine)
 	//flag.Parse()
 
-	logrus.Infof("metrics-bind-address:%s","8080")
-	logrus.Infof("health-probe-address:%s","8081")
+	logrus.Infof("metrics-bind-address:%s", "8080")
+	logrus.Infof("health-probe-address:%s", "8081")
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -89,7 +88,7 @@ func main() {
 		// LeaderElectionReleaseOnCancel: true,
 	})
 	if err != nil {
-		logrus.Error(err,"unable to start manager")
+		logrus.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
