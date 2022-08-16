@@ -15,10 +15,16 @@ spec:
     singular: mysql
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.replication
+      name: Replication
+      type: string
+    - jsonPath: .spec.combo
+      name: Combo
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
-        description: Mysql is the Schema for the mysqls API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -36,10 +42,15 @@ spec:
             description: MysqlSpec defines the desired state of Mysql
             properties:
               combo:
-                description: 定义MySQL规格套餐,small
+                description: 定义MySQL规格套餐,默认small,只支持small,medium,large三个属性 可以在mysql-operator/pkg/constants中进行修改对应combo的配置
+                enum:
+                - small
+                - medium
+                - large
                 type: string
               replication:
-                description: 定义复制配置,默认是true，Operator将生成主从MySQL deployment
+                description: 定义复制配置,默认是true，Operator将生成主从MySQL deployment 定义字段类型校验
+                format: bool
                 type: boolean
             required:
             - combo

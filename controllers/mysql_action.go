@@ -3,12 +3,12 @@ package controllers
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	mysqlv1 "mysql-operator/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	mysqlv1 "mysql-operator/api/v1"
 	"mysql-operator/pkg/constants"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // 创建Mysql方法,返回appsv1.deployment类型

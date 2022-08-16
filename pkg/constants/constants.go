@@ -3,8 +3,9 @@ package constants
 
 const (
 	MYSQL_ROOT_PASSWORD = "root1234"
-	Registry_Addr = ""
-	Image = "mysql:5.7"
+	// 镜像仓库使用"/"结尾
+	Registry_Addr = "bitnami/"
+	Image = "mysql:5.7.39"
 )
 
 // 定义MySQL规格,单位分别为core,GB,GB

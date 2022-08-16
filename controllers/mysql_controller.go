@@ -42,8 +42,16 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	logrus.Info("MySQL-Operator reconciler start")
 	mysqloperator := &mysqlv1.Mysql{}
+
 	// 查询Namespace下是否存在mysqloperator,如果不存在则满足errors.IsNotFound(err),函数返回
 	err := r.Get(context.TODO(),req.NamespacedName, mysqloperator)
+
+	// uuid 判空说明是删除namespace下指定的operator
+	uuid := mysqloperator.ObjectMeta.UID
+	if uuid == "" {
+		logrus.Info("MySQL-Operator reconciler delete")
+	}
+
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -96,7 +104,9 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *MysqlReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	e := MysqlPrepare{}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&mysqlv1.Mysql{}).
+		WithEventFilter(e).
 		Complete(r)
 }

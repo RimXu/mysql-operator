@@ -25,12 +25,14 @@ import (
 
 // MysqlSpec defines the desired state of Mysql
 type MysqlSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	// 定义复制配置,默认是true，Operator将生成主从MySQL deployment
+	// 定义字段类型校验
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Format:= bool
 	Replication  bool `json:"replication,true"`
-	// 定义MySQL规格套餐,默认small
+	// 定义MySQL规格套餐,默认small,只支持small,medium,large三个属性
+	// 可以在mysql-operator/pkg/constants中进行修改对应combo的配置
+	// +kubebuilder:validation:Enum:= small;medium;large
 	Combo string `json:"combo,small"`
 }
 
@@ -43,7 +45,8 @@ type MysqlStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// Mysql is the Schema for the mysqls API
+// +kubebuilder:printcolumn:name="Replication",type=string,JSONPath=`.spec.replication`
+// +kubebuilder:printcolumn:name="Combo",type=string,JSONPath=`.spec.combo`
 type Mysql struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
