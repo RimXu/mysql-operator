@@ -1,0 +1,8 @@
+apiVersion: database.operator.io/v1
+kind: Mysql
+metadata:
+  name: mysql-test
+spec:
+  # TODO(user): Add fields here
+  replication: true
+  combo: medium

@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -26,6 +27,8 @@ import (
 	mysqlv1 "mysql-operator/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	volumes "mysql-operator/pkg/volumes"
+	//"mysql-operator/pkg/constants"
 )
 
 // MysqlReconciler reconciles a Mysql object
@@ -44,7 +47,7 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	mysqloperator := &mysqlv1.Mysql{}
 
 	// 查询Namespace下是否存在mysqloperator,如果不存在则满足errors.IsNotFound(err),函数返回
-	err := r.Get(context.TODO(),req.NamespacedName, mysqloperator)
+	err := r.Get(context.TODO(), req.NamespacedName, mysqloperator)
 
 	// uuid 判空说明是删除namespace下指定的operator
 	uuid := mysqloperator.ObjectMeta.UID
@@ -60,53 +63,61 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 	mysqldep := &appsv1.Deployment{}
 	combo := mysqloperator.Spec.Combo
+
 	//判断是否需要创建MySQL主从主从
 	if mysqloperator.Spec.Replication == true {
 		// 查询{Name:my.Name,Namespace:my.Namespace} 是否存在deployment,如果不存在则满足errors.IsNotFound(err)
-		err = r.Get(context.TODO(),types.NamespacedName{Name:mysqloperator.Name+"-master",Namespace:mysqloperator.Namespace},mysqldep)
+		err = r.Get(context.TODO(), types.NamespacedName{Name: mysqloperator.Name + "-master", Namespace: mysqloperator.Namespace}, mysqldep)
 		if err != nil {
 			logrus.Info("MySQL replication configuration")
 			if errors.IsNotFound(err) {
-				master := r.CreateMysql(mysqloperator,"-master",combo)
+				volumeerr := volumes.CreateVolumes("ABC","BCD")
+				if volumeerr != nil {
+					fmt.Println(volumeerr)
+				}
+				master := r.CreateMysql(mysqloperator, "-master", combo)
 				if err = r.Create(context.TODO(), master); err != nil {
 					return ctrl.Result{}, err
 				}
-				//mysqloperator.Status.Replicas = fmt.Sprintf("%d",mysqldep.Status.Replicas)
 				if err := r.Status().Update(ctx, mysqloperator); err != nil {
-					logrus.Error(err,"MySQL master status update error")
+					logrus.Error(err, "MySQL master status update error")
 				}
 				return ctrl.Result{Requeue: true}, nil
 			} else {
-				return ctrl.Result{},err
+				return ctrl.Result{}, err
 			}
 		}
-		err = r.Get(context.TODO(),types.NamespacedName{Name:mysqloperator.Name+"-slave",Namespace:mysqloperator.Namespace},mysqldep)
+		err = r.Get(context.TODO(), types.NamespacedName{Name: mysqloperator.Name + "-slave", Namespace: mysqloperator.Namespace}, mysqldep)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				slave := r.CreateMysql(mysqloperator,"-slave",combo)
+				slave := r.CreateMysql(mysqloperator, "-slave", combo)
 				if err = r.Create(context.TODO(), slave); err != nil {
 					return ctrl.Result{}, err
 				}
-				//mysqloperator.Status.Replicas = fmt.Sprintf("%d",mysqldep.Status.Replicas)
 				if err := r.Status().Update(ctx, mysqloperator); err != nil {
-					logrus.Error(err,"MySQL slave status update error")
+					logrus.Error(err, "MySQL slave status update error")
 				}
 				return ctrl.Result{Requeue: true}, nil
 			} else {
-				return ctrl.Result{},err
+				return ctrl.Result{}, err
 			}
 		}
 	} else {
 		logrus.Info("MySQL Standalone configuration")
 	}
+
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *MysqlReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// 定义operator事件过滤
 	e := MysqlPrepare{}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&mysqlv1.Mysql{}).
+		// 使用WithEventFilter过滤资源事件
 		WithEventFilter(e).
+		// 如果关注operator创建的deployment事件,可以使用Owns方法,其他资源可以使用Watch方法
+		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }

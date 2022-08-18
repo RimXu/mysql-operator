@@ -29,7 +29,7 @@ type MysqlSpec struct {
 	// 定义字段类型校验
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format:= bool
-	Replication  bool `json:"replication,true"`
+	Replication bool `json:"replication,true"`
 	// 定义MySQL规格套餐,默认small,只支持small,medium,large三个属性
 	// 可以在mysql-operator/pkg/constants中进行修改对应combo的配置
 	// +kubebuilder:validation:Enum:= small;medium;large
