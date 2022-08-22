@@ -2,7 +2,9 @@ apiVersion: database.operator.io/v1
 kind: Mysql
 metadata:
   name: mysql-sample
+  namespace: mysql
 spec:
   # TODO(user): Add fields here
   replication: true
   combo: small
+  storageclass: "nfs-client-storageclass"

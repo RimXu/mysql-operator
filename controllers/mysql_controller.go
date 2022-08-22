@@ -25,10 +25,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	mysqlv1 "mysql-operator/api/v1"
+	"mysql-operator/pkg/constants"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	volumes "mysql-operator/pkg/volumes"
-	//"mysql-operator/pkg/constants"
+	apiv1 "k8s.io/api/core/v1"
 )
 
 // MysqlReconciler reconciles a Mysql object
@@ -46,6 +46,7 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	logrus.Info("MySQL-Operator reconciler start")
 	mysqloperator := &mysqlv1.Mysql{}
 
+
 	// 查询Namespace下是否存在mysqloperator,如果不存在则满足errors.IsNotFound(err),函数返回
 	err := r.Get(context.TODO(), req.NamespacedName, mysqloperator)
 
@@ -54,7 +55,6 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	if uuid == "" {
 		logrus.Info("MySQL-Operator reconciler delete")
 	}
-
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -63,6 +63,8 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 	mysqldep := &appsv1.Deployment{}
 	combo := mysqloperator.Spec.Combo
+	sc := mysqloperator.Spec.StorageClass
+	size := constants.ComboReflect[combo]["Disk"]
 
 	//判断是否需要创建MySQL主从主从
 	if mysqloperator.Spec.Replication == true {
@@ -70,8 +72,13 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		err = r.Get(context.TODO(), types.NamespacedName{Name: mysqloperator.Name + "-master", Namespace: mysqloperator.Namespace}, mysqldep)
 		if err != nil {
 			logrus.Info("MySQL replication configuration")
+			// TEST BEGIN
+			//pvc := &apiv1.PersistentVolume{}
+			//err := r.Get(context.TODO(), types.NamespacedName{Namespace: mysqloperator.Namespace}, pvc)
+			//fmt.Println(pvc)
+			// TEST END
 			if errors.IsNotFound(err) {
-				volumeerr := volumes.CreateVolumes("ABC","BCD")
+				volumeerr := r.CreateVolumes(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",size,ctx)
 				if volumeerr != nil {
 					fmt.Println(volumeerr)
 				}
@@ -120,4 +127,19 @@ func (r *MysqlReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// 如果关注operator创建的deployment事件,可以使用Owns方法,其他资源可以使用Watch方法
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
+}
+
+
+// FuncVolumes
+func (r *MysqlReconciler) CreateVolumes(ns string, sc string, name string, size string,ctx context.Context) error {
+	//
+	foundConfigMap := &apiv1.ConfigMap{}
+	err := r.Get(ctx, types.NamespacedName{Name: "kube-root-ca.crt", Namespace: "default"}, foundConfigMap)
+	if err != nil {
+		// If a configMap name is provided, then it must exist
+		// You will likely want to create an Event for the user to understand why their reconcile is failing.
+		return err
+	}
+	fmt.Println(foundConfigMap)
+	return nil
 }

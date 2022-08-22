@@ -22,6 +22,9 @@ spec:
     - jsonPath: .spec.combo
       name: Combo
       type: string
+    - jsonPath: .spec.storageclass
+      name: StorageClass
+      type: string
     name: v1
     schema:
       openAPIV3Schema:
@@ -50,11 +53,17 @@ spec:
                 type: string
               replication:
                 description: 定义复制配置,默认是true，Operator将生成主从MySQL deployment 定义字段类型校验
+                  Run "make" and "make install" to regenerate code after modifying
+                  this file
                 format: bool
                 type: boolean
+              storageclass:
+                format: string
+                type: string
             required:
             - combo
             - replication
+            - storageclass
             type: object
           status:
             description: MysqlStatus defines the observed state of Mysql

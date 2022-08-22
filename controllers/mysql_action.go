@@ -54,11 +54,11 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 							},
 							Resources: apiv1.ResourceRequirements{
 								Limits: apiv1.ResourceList{
-									"cpu" :  resource.MustParse(cpu),
+									"cpu":    resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
 								Requests: apiv1.ResourceList{
-									"cpu": resource.MustParse(cpu),
+									"cpu":    resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
 							},

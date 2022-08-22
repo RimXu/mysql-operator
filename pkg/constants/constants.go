@@ -8,8 +8,8 @@ const (
 )
 
 // 定义MySQL规格和单位
-var ComboReflect = map[string] map[string] string {
-	"small" :  {"CPU": "100m" , "Memory": "400Mi" ,"Disk": "10Gi"},
-	"medium" : {"CPU": "200m" , "Memory": "400Mi", "Disk": "20Gi"},
-	"large" :  {"CPU": "400m" , "Memory": "800Mi", "Disk": "30Gi"},
+var ComboReflect = map[string]map[string]string{
+	"small":  {"CPU": "100m", "Memory": "400Mi", "Disk": "1Gi"},
+	"medium": {"CPU": "200m", "Memory": "400Mi", "Disk": "2Gi"},
+	"large":  {"CPU": "400m", "Memory": "800Mi", "Disk": "3Gi"},
 }

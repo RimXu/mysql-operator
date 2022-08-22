@@ -27,6 +27,7 @@ import (
 type MysqlSpec struct {
 	// 定义复制配置,默认是true，Operator将生成主从MySQL deployment
 	// 定义字段类型校验
+	// Run "make" and "make install" to regenerate code after modifying this file
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format:= bool
 	Replication bool `json:"replication,true"`
@@ -34,6 +35,9 @@ type MysqlSpec struct {
 	// 可以在mysql-operator/pkg/constants中进行修改对应combo的配置
 	// +kubebuilder:validation:Enum:= small;medium;large
 	Combo string `json:"combo,small"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Format:= string
+	StorageClass string `json:"storageclass"`
 }
 
 // MysqlStatus defines the observed state of Mysql
@@ -47,6 +51,7 @@ type MysqlStatus struct {
 
 // +kubebuilder:printcolumn:name="Replication",type=string,JSONPath=`.spec.replication`
 // +kubebuilder:printcolumn:name="Combo",type=string,JSONPath=`.spec.combo`
+// +kubebuilder:printcolumn:name="StorageClass",type=string,JSONPath=`.spec.storageclass`
 type Mysql struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
