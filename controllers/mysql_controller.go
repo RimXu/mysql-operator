@@ -18,17 +18,19 @@ package controllers
 
 import (
 	"context"
-	"fmt"
+
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	//"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	mysqlv1 "mysql-operator/api/v1"
 	"mysql-operator/pkg/constants"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	apiv1 "k8s.io/api/core/v1"
+	//apiv1 "k8s.io/api/core/v1"
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // MysqlReconciler reconciles a Mysql object
@@ -51,10 +53,10 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	err := r.Get(context.TODO(), req.NamespacedName, mysqloperator)
 
 	// uuid 判空说明是删除namespace下指定的operator
-	uuid := mysqloperator.ObjectMeta.UID
-	if uuid == "" {
-		logrus.Info("MySQL-Operator reconciler delete")
-	}
+	//uuid := mysqloperator.ObjectMeta.UID
+	//if uuid == "" {
+	//	logrus.Info("MySQL-Operator reconciler delete")
+	//}
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -72,24 +74,23 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		err = r.Get(context.TODO(), types.NamespacedName{Name: mysqloperator.Name + "-master", Namespace: mysqloperator.Namespace}, mysqldep)
 		if err != nil {
 			logrus.Info("MySQL replication configuration")
-			// TEST BEGIN
-			//pvc := &apiv1.PersistentVolume{}
-			//err := r.Get(context.TODO(), types.NamespacedName{Namespace: mysqloperator.Namespace}, pvc)
-			//fmt.Println(pvc)
-			// TEST END
+			// 如果mysqloperator 不存在则继续QueryPVC
 			if errors.IsNotFound(err) {
-				volumeerr := r.CreateVolumes(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",size,ctx)
-				if volumeerr != nil {
-					fmt.Println(volumeerr)
+				err = r.QueryPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",ctx)
+				// 如果PVC不存在则创建PVC并创建MySQL实例
+				if errors.IsNotFound(err) {
+					err = r.CreatePVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",size,ctx)
+					master := r.CreateMysql(mysqloperator, "-master", combo)
+					if err = r.Create(context.TODO(), master); err != nil {
+						return ctrl.Result{}, err
+					}
+					if err := r.Status().Update(ctx, mysqloperator); err != nil {
+						logrus.Error(err, "MySQL master status update error")
+					}
+					return ctrl.Result{Requeue: true}, nil
+				} else {
+					return ctrl.Result{Requeue: false}, nil
 				}
-				master := r.CreateMysql(mysqloperator, "-master", combo)
-				if err = r.Create(context.TODO(), master); err != nil {
-					return ctrl.Result{}, err
-				}
-				if err := r.Status().Update(ctx, mysqloperator); err != nil {
-					logrus.Error(err, "MySQL master status update error")
-				}
-				return ctrl.Result{Requeue: true}, nil
 			} else {
 				return ctrl.Result{}, err
 			}
@@ -130,16 +131,3 @@ func (r *MysqlReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 
-// FuncVolumes
-func (r *MysqlReconciler) CreateVolumes(ns string, sc string, name string, size string,ctx context.Context) error {
-	//
-	foundConfigMap := &apiv1.ConfigMap{}
-	err := r.Get(ctx, types.NamespacedName{Name: "kube-root-ca.crt", Namespace: "default"}, foundConfigMap)
-	if err != nil {
-		// If a configMap name is provided, then it must exist
-		// You will likely want to create an Event for the user to understand why their reconcile is failing.
-		return err
-	}
-	fmt.Println(foundConfigMap)
-	return nil
-}

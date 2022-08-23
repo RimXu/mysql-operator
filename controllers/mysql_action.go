@@ -1,11 +1,13 @@
 package controllers
 
 import (
+
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	mysqlv1 "mysql-operator/api/v1"
 	"mysql-operator/pkg/constants"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -18,7 +20,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 	cpu := constants.ComboReflect[combo]["CPU"]
 	memory := constants.ComboReflect[combo]["Memory"]
 	//disk := constants.ComboReflect[combo]["Disk"]
-	logrus.Infof("combo cpu:%s,memory:%s", cpu, memory)
+	logrus.Infof("combo { cpu:%s, memory:%s }", cpu, memory)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      m.Name + role,
@@ -54,11 +56,11 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 							},
 							Resources: apiv1.ResourceRequirements{
 								Limits: apiv1.ResourceList{
-									"cpu":    resource.MustParse(cpu),
+									"cpu" :  resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
 								Requests: apiv1.ResourceList{
-									"cpu":    resource.MustParse(cpu),
+									"cpu": resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
 							},
@@ -73,10 +75,11 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 	if err != nil {
 		logrus.Error(err, "MySQL created failed", " Name:", deployment.Name, " Namespace:", deployment.Namespace)
 	}
-	logrus.Infof("MySQL created successful Name:%s,Namespace:%s", deployment.Name, deployment.Namespace)
+	logrus.Infof("MySQL created successful { name:%s, namespace:%s }", deployment.Name, deployment.Namespace)
 	return deployment
 }
 
 func LabelsForApp(name string) map[string]string {
 	return map[string]string{"app": name}
 }
+
