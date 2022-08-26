@@ -64,6 +64,22 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 									"memory": resource.MustParse(memory),
 								},
 							},
+							VolumeMounts: []apiv1.VolumeMount{
+								{
+									Name: "data",
+									MountPath: "/data",
+								},
+							},
+						},
+					},
+					Volumes: []apiv1.Volume{
+						{
+							Name: "data",
+							VolumeSource: apiv1.VolumeSource{
+								PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+									ClaimName: m.Name + role + "-data",
+								},
+							},
 						},
 					},
 				},
