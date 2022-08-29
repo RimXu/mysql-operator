@@ -45,7 +45,7 @@ type MysqlReconciler struct {
 func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	//_ = log.FromContext(ctx)
 
-	logrus.Info("MySQL-Operator reconciler start")
+	logrus.Info("MySQL-Operator reconciler start ",ctx)
 	mysqloperator := &mysqlv1.Mysql{}
 
 
@@ -74,10 +74,20 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		err = r.Get(context.TODO(), types.NamespacedName{Name: mysqloperator.Name + "-master", Namespace: mysqloperator.Namespace}, mysqldep)
 		if err != nil {
 			logrus.Info("MySQL replication configuration")
-			// 如果mysqloperator 不存在则继续QueryPVC
+
+			// 如果mysqloperator
 			if errors.IsNotFound(err) {
+				// 如果CM不存在，则继续CreateCM
+				err = r.QueryCM(mysqloperator.Namespace,mysqloperator.Name + "-master",ctx)
+				if errors.IsNotFound(err) {
+					err := r.CreateCM(mysqloperator.Namespace, mysqloperator.Name + "-master","master", combo,ctx)
+					if err != nil {
+						logrus.Error("CreateCM error",err)
+					}
+				}
+
+				// 如果PVC不存在，则继续CreatePVC并创建MySQL
 				err = r.QueryPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",ctx)
-				// 如果PVC不存在则创建PVC并创建MySQL实例
 				if errors.IsNotFound(err) {
 					err = r.CreatePVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",size,ctx)
 					master := r.CreateMysql(mysqloperator, "-master", combo)
@@ -98,6 +108,15 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		err = r.Get(context.TODO(), types.NamespacedName{Name: mysqloperator.Name + "-slave", Namespace: mysqloperator.Namespace}, mysqldep)
 		if err != nil {
 			if errors.IsNotFound(err) {
+				// 如果CM不存在，则继续CreateCM
+				err = r.QueryCM(mysqloperator.Namespace,mysqloperator.Name + "-slave",ctx)
+				if errors.IsNotFound(err) {
+					err := r.CreateCM(mysqloperator.Namespace, mysqloperator.Name + "-slave","slave", combo,ctx)
+					if err != nil {
+						logrus.Error("CreateCM error",err)
+					}
+				}
+
 				err = r.QueryPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-slave-data",ctx)
 				// 如果PVC不存在则创建PVC并创建MySQL实例
 				if errors.IsNotFound(err) {

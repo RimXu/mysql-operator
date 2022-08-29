@@ -20,7 +20,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 	cpu := constants.ComboReflect[combo]["CPU"]
 	memory := constants.ComboReflect[combo]["Memory"]
 	//disk := constants.ComboReflect[combo]["Disk"]
-	logrus.Infof("combo { cpu:%s, memory:%s }", cpu, memory)
+	logrus.Infof("MySQL combo { cpu:%s, memory:%s }", cpu, memory)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      m.Name + role,
