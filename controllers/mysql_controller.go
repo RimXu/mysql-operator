@@ -121,8 +121,8 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				// 如果PVC不存在则创建PVC并创建MySQL实例
 				if errors.IsNotFound(err) {
 					err = r.CreatePVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-slave-data",size,ctx)
-					master := r.CreateMysql(mysqloperator, "-slave", combo)
-					if err = r.Create(context.TODO(), master); err != nil {
+					slave := r.CreateMysql(mysqloperator, "-slave", combo)
+					if err = r.Create(context.TODO(), slave); err != nil {
 						return ctrl.Result{}, err
 					}
 					if err := r.Status().Update(ctx, mysqloperator); err != nil {

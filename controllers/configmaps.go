@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"mysql-operator/pkg/constants"
@@ -17,7 +17,7 @@ import (
 
 // 查询ConfigMaps,如果不存在则返回错误
 func (r *MysqlReconciler) QueryCM(ns string, name string, ctx context.Context) error {
-	foundCM := &apiv1.ConfigMap{}
+	foundCM := &corev1.ConfigMap{}
 	err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: ns}, foundCM)
 	if err != nil {
 		logrus.Warn(err)
@@ -37,7 +37,7 @@ func (r *MysqlReconciler) CreateCM(ns string, name string, role string, combo st
 		server_id = "11"
 	}
 	cm,_:= ReadMycnf(constants.MySQLCfg,server_id,FormatBufferpool(constants.ComboReflect[combo]["Memory"]))
-	optionCM := &apiv1.ConfigMap{
+	optionCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Namespace: ns,

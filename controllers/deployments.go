@@ -4,13 +4,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mysqlv1 "mysql-operator/api/v1"
 	"mysql-operator/pkg/constants"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // 创建Mysql方法,返回appsv1.deployment类型
@@ -19,7 +20,6 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 	var replicas int32 = 1
 	cpu := constants.ComboReflect[combo]["CPU"]
 	memory := constants.ComboReflect[combo]["Memory"]
-	//disk := constants.ComboReflect[combo]["Disk"]
 	logrus.Infof("MySQL combo { cpu:%s, memory:%s }", cpu, memory)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -31,53 +31,116 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},
-			Template: apiv1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: labels,
 				},
-				Spec: apiv1.PodSpec{
-					Containers: []apiv1.Container{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
 						{
 							Name:            "mysql",
 							Image:           constants.Registry_Addr + constants.Image,
 							ImagePullPolicy: "IfNotPresent",
-							Env: []apiv1.EnvVar{
+							Args: []string{
+								"mysqld",
+								"--defaults-file=/etc/mysql/my.cnf",
+								"--user=mysql",
+							},
+							Env: []corev1.EnvVar{
 								{
 									Name:  "MYSQL_ROOT_PASSWORD",
 									Value: constants.MYSQL_ROOT_PASSWORD,
 								},
 							},
-							Ports: []apiv1.ContainerPort{
+							Ports: []corev1.ContainerPort{
 								{
 									Name:          "http",
-									Protocol:      apiv1.ProtocolTCP,
+									Protocol:      corev1.ProtocolTCP,
 									ContainerPort: 3306,
 								},
 							},
-							Resources: apiv1.ResourceRequirements{
-								Limits: apiv1.ResourceList{
+							Resources: corev1.ResourceRequirements{
+								Limits: corev1.ResourceList{
 									"cpu" :  resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
-								Requests: apiv1.ResourceList{
+								Requests: corev1.ResourceList{
 									"cpu": resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
 							},
-							VolumeMounts: []apiv1.VolumeMount{
+							VolumeMounts: []corev1.VolumeMount{
 								{
-									Name: "data",
+									Name: "mysql-data",
 									MountPath: "/data",
 								},
+								{
+									Name: "mysql-config",
+									MountPath: "/etc/mysql",
+								},
+								{
+									Name: "etc-localtime",
+									MountPath: "/etc/localtime",
+								},
+							},
+							Lifecycle: &corev1.Lifecycle{
+								PostStart: &corev1.LifecycleHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{
+											"/bin/sh",
+											"-c",
+											"sh /root/init.sh",
+										},
+									},
+								},
+							},
+							LivenessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									TCPSocket: &corev1.TCPSocketAction{
+										Port: intstr.IntOrString{
+											Type: 0,
+											IntVal: 3306,
+										},
+									},
+								},
+								TimeoutSeconds: 5,
+								SuccessThreshold: 1,
+								FailureThreshold: 3,
+								InitialDelaySeconds: 15,
+								PeriodSeconds: 30,
 							},
 						},
 					},
-					Volumes: []apiv1.Volume{
+					Volumes: []corev1.Volume{
 						{
-							Name: "data",
-							VolumeSource: apiv1.VolumeSource{
-								PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+							Name: "mysql-data",
+							VolumeSource: corev1.VolumeSource{
+								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 									ClaimName: m.Name + role + "-data",
+								},
+							},
+						},
+						{
+							Name: "mysql-config",
+							VolumeSource: corev1.VolumeSource{
+									ConfigMap: &corev1.ConfigMapVolumeSource{
+										LocalObjectReference: corev1.LocalObjectReference{
+											Name: m.Name + role,
+										},
+									Items: []corev1.KeyToPath{
+										{
+											Key:"my.cnf",
+											Path: "my.cnf",
+										},
+									},
+								},
+							},
+						},
+						{
+							Name: "etc-localtime",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: "/etc/localtime",
 								},
 							},
 						},

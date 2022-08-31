@@ -6,13 +6,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // 查询pvc是否存在,如果不存在返回 PersistentVolume "XXX" not found 错误类型
 func (r *MysqlReconciler) QueryPVC(ns string, sc string, name string, ctx context.Context) error {
 	//
-	foundPVC := &apiv1.PersistentVolumeClaim{}
+	foundPVC := &corev1.PersistentVolumeClaim{}
 	err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: ns}, foundPVC)
 	if err != nil {
 		logrus.Warn(err)
@@ -25,14 +25,14 @@ func (r *MysqlReconciler) QueryPVC(ns string, sc string, name string, ctx contex
 // 创建PVC
 func (r *MysqlReconciler) CreatePVC(ns string, sc string, name string, size string,ctx context.Context) error {
 	logrus.Infof("PersistentVolumeClaim creating: { namespace:'%s', name:'%s' }",ns,name)
-	optionPVC := &apiv1.PersistentVolumeClaim{
+	optionPVC := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Namespace: ns,
 		},
-		Spec: apiv1.PersistentVolumeClaimSpec{
-			AccessModes: []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
-			Resources: apiv1.ResourceRequirements{Requests: apiv1.ResourceList{apiv1.ResourceName(apiv1.ResourceStorage): resource.MustParse(size),
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			Resources: corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceName(corev1.ResourceStorage): resource.MustParse(size),
 			},
 			},
 			StorageClassName: &sc,
