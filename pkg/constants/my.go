@@ -1,6 +1,5 @@
 package constants
 
-
 // 可以自定义my.cnf文件,目前只会替换server_id=MYSQL_SERVER_ID和innodb_buffer_pool_size=MYSQL_BUFFER_POOL_SIZE
 // 目前是使用strings.Replace方法替换配置
 // 可以修改mysql-operator/controllers/configmaps中ReadMycnf方法
@@ -124,4 +123,3 @@ master-info-repository=table
 slave_type_conversions="ALL_NON_LOSSY"
 slave-parallel-type=LOGICAL_CLOCK
 slave-parallel-workers=8`
-

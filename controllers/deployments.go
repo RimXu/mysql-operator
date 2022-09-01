@@ -1,17 +1,16 @@
 package controllers
 
 import (
-
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
 	mysqlv1 "mysql-operator/api/v1"
 	"mysql-operator/pkg/constants"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // 创建Mysql方法,返回appsv1.deployment类型
@@ -38,8 +37,8 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:            "mysql",
-							Image:           constants.Registry_Addr + constants.Image,
+							Name:            m.Name + role,
+							Image:           constants.Registry_Addr + constants.Mysql_Image,
 							ImagePullPolicy: "IfNotPresent",
 							Args: []string{
 								"mysqld",
@@ -61,25 +60,25 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
-									"cpu" :  resource.MustParse(cpu),
+									"cpu":    resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
 								Requests: corev1.ResourceList{
-									"cpu": resource.MustParse(cpu),
+									"cpu":    resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
-									Name: "mysql-data",
+									Name:      "mysql-data",
 									MountPath: "/data",
 								},
 								{
-									Name: "mysql-config",
+									Name:      "mysql-config",
 									MountPath: "/etc/mysql",
 								},
 								{
-									Name: "etc-localtime",
+									Name:      "etc-localtime",
 									MountPath: "/etc/localtime",
 								},
 							},
@@ -98,16 +97,55 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 								ProbeHandler: corev1.ProbeHandler{
 									TCPSocket: &corev1.TCPSocketAction{
 										Port: intstr.IntOrString{
-											Type: 0,
+											Type:   0,
 											IntVal: 3306,
 										},
 									},
 								},
-								TimeoutSeconds: 5,
-								SuccessThreshold: 1,
-								FailureThreshold: 3,
+								TimeoutSeconds:      5,
+								SuccessThreshold:    1,
+								FailureThreshold:    3,
 								InitialDelaySeconds: 15,
-								PeriodSeconds: 30,
+								PeriodSeconds:       30,
+							},
+						},
+						// exporter container
+						{
+							Name:            "mysql-exporter",
+							Image:           constants.Registry_Addr + constants.Exporter_Image,
+							ImagePullPolicy: "IfNotPresent",
+							Args: []string{
+								"--collect.binlog_size",
+								"--collect.engine_innodb_status",
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "DATA_SOURCE_NAME",
+									Value: "exporter:exporterMWF@(localhost:3306)/",
+								},
+							},
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "http",
+									Protocol:      corev1.ProtocolTCP,
+									ContainerPort: 9104,
+								},
+							},
+							Resources: corev1.ResourceRequirements{
+								Limits: corev1.ResourceList{
+									"cpu":    resource.MustParse("500m"),
+									"memory": resource.MustParse("500Mi"),
+								},
+								Requests: corev1.ResourceList{
+									"cpu":    resource.MustParse("100m"),
+									"memory": resource.MustParse("200Mi"),
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "etc-localtime",
+									MountPath: "/etc/localtime",
+								},
 							},
 						},
 					},
@@ -123,13 +161,13 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 						{
 							Name: "mysql-config",
 							VolumeSource: corev1.VolumeSource{
-									ConfigMap: &corev1.ConfigMapVolumeSource{
-										LocalObjectReference: corev1.LocalObjectReference{
-											Name: m.Name + role,
-										},
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: m.Name + role,
+									},
 									Items: []corev1.KeyToPath{
 										{
-											Key:"my.cnf",
+											Key:  "my.cnf",
 											Path: "my.cnf",
 										},
 									},
@@ -161,4 +199,3 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 func LabelsForApp(name string) map[string]string {
 	return map[string]string{"app": name}
 }
-

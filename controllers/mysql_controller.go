@@ -73,73 +73,70 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		// 查询{Name:my.Name,Namespace:my.Namespace} 是否存在deployment,如果不存在则满足errors.IsNotFound(err)
 		err = r.Get(context.TODO(), types.NamespacedName{Name: mysqloperator.Name + "-master", Namespace: mysqloperator.Namespace}, mysqldep)
 		if err != nil {
-			logrus.Info("MySQL replication configuration")
-
-			// 如果mysqloperator
+			// 如果mysqloperator不存在
 			if errors.IsNotFound(err) {
-				// 如果CM不存在，则继续CreateCM
-				err = r.QueryCM(mysqloperator.Namespace,mysqloperator.Name + "-master",ctx)
-				if errors.IsNotFound(err) {
-					err := r.CreateCM(mysqloperator.Namespace, mysqloperator.Name + "-master","master", combo,ctx)
+				// 如果CM/SVC/PVC均不存在，则继续CreateCM/SVC/PVC
+				mcmerr := r.QueryCM(mysqloperator.Namespace,mysqloperator.Name + "-master",ctx)
+				msvcerr := r.QuerySVC(mysqloperator.Namespace,mysqloperator.Name + "-master",ctx)
+				mpvcerr := r.QueryPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",ctx)
+				scmerr := r.QueryCM(mysqloperator.Namespace,mysqloperator.Name + "-slave",ctx)
+				ssvcerr := r.QuerySVC(mysqloperator.Namespace,mysqloperator.Name + "-slave",ctx)
+				spvcerr := r.QueryPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-slave-data",ctx)
+				if errors.IsNotFound(mcmerr) && errors.IsNotFound(msvcerr) && errors.IsNotFound(mpvcerr) &&
+					errors.IsNotFound(scmerr) && errors.IsNotFound(ssvcerr) && errors.IsNotFound(spvcerr){
+					// CreateCM
+					err = r.CreateCM(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-master","master", combo,ctx)
 					if err != nil {
 						logrus.Error("CreateCM error",err)
 					}
-				}
+					err = r.CreateCM(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-slave","slave", combo,ctx)
+					if err != nil {
+						logrus.Error("CreateCM error",err)
+					}
 
-				// 如果PVC不存在，则继续CreatePVC并创建MySQL
-				err = r.QueryPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",ctx)
-				if errors.IsNotFound(err) {
+					// CreateSVC
+					err = r.CreateSVC(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-master",ctx)
+					if err != nil {
+						logrus.Error("CreateSVC error",err)
+					}
+					err = r.CreateSVC(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-slave",ctx)
+					if err != nil {
+						logrus.Error("CreateSVC error",err)
+					}
+
+					// CreatePVC
 					err = r.CreatePVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",size,ctx)
-					master := r.CreateMysql(mysqloperator, "-master", combo)
-					if err = r.Create(context.TODO(), master); err != nil {
-						return ctrl.Result{}, err
-					}
-					if err := r.Status().Update(ctx, mysqloperator); err != nil {
-						logrus.Error(err, "MySQL master status update error")
-					}
-					return ctrl.Result{Requeue: true}, nil
-				} else {
-					return ctrl.Result{Requeue: false}, nil
-				}
-			} else {
-				return ctrl.Result{}, err
-			}
-		}
-		err = r.Get(context.TODO(), types.NamespacedName{Name: mysqloperator.Name + "-slave", Namespace: mysqloperator.Namespace}, mysqldep)
-		if err != nil {
-			if errors.IsNotFound(err) {
-				// 如果CM不存在，则继续CreateCM
-				err = r.QueryCM(mysqloperator.Namespace,mysqloperator.Name + "-slave",ctx)
-				if errors.IsNotFound(err) {
-					err := r.CreateCM(mysqloperator.Namespace, mysqloperator.Name + "-slave","slave", combo,ctx)
 					if err != nil {
-						logrus.Error("CreateCM error",err)
+						logrus.Error("CreatePVC error",err)
 					}
-				}
-
-				err = r.QueryPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-slave-data",ctx)
-				// 如果PVC不存在则创建PVC并创建MySQL实例
-				if errors.IsNotFound(err) {
 					err = r.CreatePVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-slave-data",size,ctx)
-					slave := r.CreateMysql(mysqloperator, "-slave", combo)
-					if err = r.Create(context.TODO(), slave); err != nil {
-						return ctrl.Result{}, err
+					if err != nil {
+						logrus.Error("CreatePVC error",err)
 					}
-					if err := r.Status().Update(ctx, mysqloperator); err != nil {
-						logrus.Error(err, "MySQL slave status update error")
-					}
-					return ctrl.Result{Requeue: true}, nil
-				} else {
+				} else{
 					return ctrl.Result{Requeue: false}, nil
 				}
-			} else {
-				return ctrl.Result{}, err
+
+				// 创建MySQL master
+				master := r.CreateMysql(mysqloperator, "-master", combo)
+				if err = r.Create(context.TODO(), master); err != nil {
+					return ctrl.Result{}, err
+				}
+				if err := r.Status().Update(ctx, mysqloperator); err != nil {
+					logrus.Error(err, "MySQL master status update error")
+				}
+				// 创建MySQL slave
+				slave := r.CreateMysql(mysqloperator, "-slave", combo)
+				if err = r.Create(context.TODO(), slave); err != nil {
+					return ctrl.Result{}, err
+				}
+				if err := r.Status().Update(ctx, mysqloperator); err != nil {
+					logrus.Error(err, "MySQL slave status update error")
+				}
+				return ctrl.Result{Requeue: true}, nil
+				}
 			}
 		}
-	} else {
-		logrus.Info("MySQL Standalone configuration")
-	}
-
 	return ctrl.Result{}, nil
 }
 

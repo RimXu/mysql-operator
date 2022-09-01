@@ -44,6 +44,7 @@ type MysqlSpec struct {
 type MysqlStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Status string `json:"status"`
 }
 
 //+kubebuilder:object:root=true
@@ -52,6 +53,7 @@ type MysqlStatus struct {
 // +kubebuilder:printcolumn:name="Replication",type=string,JSONPath=`.spec.replication`
 // +kubebuilder:printcolumn:name="Combo",type=string,JSONPath=`.spec.combo`
 // +kubebuilder:printcolumn:name="StorageClass",type=string,JSONPath=`.spec.storageclass`
+// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
 type Mysql struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
