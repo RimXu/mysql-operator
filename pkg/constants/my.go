@@ -1,5 +1,6 @@
 package constants
 
+
 // 可以自定义my.cnf文件,目前只会替换server_id=MYSQL_SERVER_ID和innodb_buffer_pool_size=MYSQL_BUFFER_POOL_SIZE
 // 目前是使用strings.Replace方法替换配置
 // 可以修改mysql-operator/controllers/configmaps中ReadMycnf方法
@@ -55,6 +56,7 @@ read_rnd_buffer_size=128K
 table_open_cache=10000
 table_definition_cache=3000
 
+
 #dir_setting
 tmpdir=/data/3306/tmp
 basedir=/data/3306/mysql
@@ -72,7 +74,6 @@ slave_load_tmpdir=/data/3306/tmp
 relay_log=/data/3306/relaylog
 relay_log_info_file=/data/3306/relay-log.info
 relay_log_index=/data/3306/mysqld-relay-bin.index
-
 
 
 #myisam_setting
@@ -122,4 +123,7 @@ master-info-repository=table
 #rpl_semi_sync_master_wait_no_slave=1
 slave_type_conversions="ALL_NON_LOSSY"
 slave-parallel-type=LOGICAL_CLOCK
-slave-parallel-workers=8`
+slave-parallel-workers=8
+
+`
+

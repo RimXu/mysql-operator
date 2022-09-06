@@ -3,9 +3,10 @@ package constants
 const (
 	MYSQL_ROOT_PASSWORD = "root1234"
 	// 镜像仓库使用"/"结尾
-	Registry_Addr  = "10.198.140.35/kce/"
-	Mysql_Image    = "mysql-xtrabackup:5.7.35-init"
-	Exporter_Image = "mysqld-exporter:v0.12.1"
+	Registry_Addr = "10.198.140.35/kce/"
+	Mysql_Image         = "mysql:5.7.35"
+	Exporter_Image		= "mysqld-exporter:v0.12.1"
+	ProxySQL_Image      = "proxysql:2.2.2"
 )
 
 // 定义MySQL规格和单位

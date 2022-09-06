@@ -1,21 +1,21 @@
 package controllers
 
 import (
+
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/apimachinery/pkg/util/intstr"
 	mysqlv1 "mysql-operator/api/v1"
 	"mysql-operator/pkg/constants"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // 创建Mysql方法,返回appsv1.deployment类型
 func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo string) *appsv1.Deployment {
-	labels := LabelsForApp(m.Name)
 	var replicas int32 = 1
 	cpu := constants.ComboReflect[combo]["CPU"]
 	memory := constants.ComboReflect[combo]["Memory"]
@@ -24,15 +24,28 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      m.Name + role,
 			Namespace: m.Namespace,
+			Labels: map[string]string{
+				"app": m.Name + role,
+				"name":  m.Name + role,
+				"system/appName": m.Name + role,
+				"system/svcName": m.Name + role,
+			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
+				MatchLabels: map[string]string{
+					"app": m.Name + role,
+				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
+					Labels: map[string]string{
+						"app": m.Name + role,
+						"name":  m.Name + role,
+						"system/appName": m.Name + role,
+						"system/svcName": m.Name + role,
+					},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
@@ -60,25 +73,25 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
-									"cpu":    resource.MustParse(cpu),
+									"cpu" :  resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
 								Requests: corev1.ResourceList{
-									"cpu":    resource.MustParse(cpu),
+									"cpu": resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
-									Name:      "mysql-data",
+									Name: "mysql-data",
 									MountPath: "/data",
 								},
 								{
-									Name:      "mysql-config",
+									Name: "mysql-config",
 									MountPath: "/etc/mysql",
 								},
 								{
-									Name:      "etc-localtime",
+									Name: "etc-localtime",
 									MountPath: "/etc/localtime",
 								},
 							},
@@ -88,7 +101,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 										Command: []string{
 											"/bin/sh",
 											"-c",
-											"sh /root/init.sh",
+											"sh /etc/mysql/init.sh",
 										},
 									},
 								},
@@ -97,16 +110,16 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 								ProbeHandler: corev1.ProbeHandler{
 									TCPSocket: &corev1.TCPSocketAction{
 										Port: intstr.IntOrString{
-											Type:   0,
+											Type: 0,
 											IntVal: 3306,
 										},
 									},
 								},
-								TimeoutSeconds:      5,
-								SuccessThreshold:    1,
-								FailureThreshold:    3,
+								TimeoutSeconds: 5,
+								SuccessThreshold: 1,
+								FailureThreshold: 3,
 								InitialDelaySeconds: 15,
-								PeriodSeconds:       30,
+								PeriodSeconds: 30,
 							},
 						},
 						// exporter container
@@ -133,17 +146,17 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
-									"cpu":    resource.MustParse("500m"),
+									"cpu" :  resource.MustParse("500m"),
 									"memory": resource.MustParse("500Mi"),
 								},
 								Requests: corev1.ResourceList{
-									"cpu":    resource.MustParse("100m"),
+									"cpu": resource.MustParse("100m"),
 									"memory": resource.MustParse("200Mi"),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
-									Name:      "etc-localtime",
+									Name: "etc-localtime",
 									MountPath: "/etc/localtime",
 								},
 							},
@@ -161,14 +174,18 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 						{
 							Name: "mysql-config",
 							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: m.Name + role,
-									},
+									ConfigMap: &corev1.ConfigMapVolumeSource{
+										LocalObjectReference: corev1.LocalObjectReference{
+											Name: m.Name + role,
+										},
 									Items: []corev1.KeyToPath{
 										{
-											Key:  "my.cnf",
+											Key:"my.cnf",
 											Path: "my.cnf",
+										},
+										{
+											Key: "init.sh",
+											Path: "init.sh",
 										},
 									},
 								},
@@ -196,6 +213,125 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 	return deployment
 }
 
-func LabelsForApp(name string) map[string]string {
-	return map[string]string{"app": name}
+
+// 创建proxysql返回deployments类型
+func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) *appsv1.Deployment {
+	prxoy_name := m.Name + "-proxy"
+	var replicas int32 = 2
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      prxoy_name,
+			Namespace: m.Namespace,
+			Labels: map[string]string{
+				"app":            prxoy_name,
+				"name":           prxoy_name,
+				"system/appName": prxoy_name,
+				"system/svcName": prxoy_name,
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": prxoy_name,
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app":            prxoy_name,
+						"name":           prxoy_name,
+						"system/appName": prxoy_name,
+						"system/svcName": prxoy_name,
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:            prxoy_name,
+							Image:           constants.Registry_Addr + constants.ProxySQL_Image,
+							ImagePullPolicy: "IfNotPresent",
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "http",
+									Protocol:      corev1.ProtocolTCP,
+									ContainerPort: 6033,
+								},
+							},
+							Resources: corev1.ResourceRequirements{
+								Limits: corev1.ResourceList{
+									"cpu":    resource.MustParse("50m"),
+									"memory": resource.MustParse("100Mi"),
+								},
+								Requests: corev1.ResourceList{
+									"cpu":    resource.MustParse("50m"),
+									"memory": resource.MustParse("100Mi"),
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "proxy-localtime",
+									MountPath: "/etc/localtime",
+								},
+								{
+									Name:      "proxy-config",
+									MountPath: "/etc/proxysql.cnf",
+									SubPath: "proxysql.cnf",
+								},
+							},
+							LivenessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									TCPSocket: &corev1.TCPSocketAction{
+										Port: intstr.IntOrString{
+											Type:   0,
+											IntVal: 6033,
+										},
+									},
+								},
+								TimeoutSeconds:      5,
+								SuccessThreshold:    1,
+								FailureThreshold:    3,
+								InitialDelaySeconds: 15,
+								PeriodSeconds:       30,
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "proxy-config",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: m.Name + "-proxy",
+									},
+									Items: []corev1.KeyToPath{
+										{
+											Key:"proxysql.cnf",
+											Path: "proxysql.cnf",
+										},
+									},
+								},
+							},
+						},
+						{
+							Name: "proxy-localtime",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: "/etc/localtime",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	// 设置deployment的上级控制器
+	err := controllerutil.SetControllerReference(m, deployment, r.Scheme)
+	if err != nil {
+		logrus.Error(err, "ProxySQL created failed", " Name:", deployment.Name, " Namespace:", deployment.Namespace)
+	}
+	logrus.Infof("ProxySQL created successful { name:%s, namespace:%s }", deployment.Name, deployment.Namespace)
+	return deployment
 }
+

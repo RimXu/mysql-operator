@@ -4,6 +4,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	//appsv1 "k8s.io/api/apps/v1"
 	//mysqlv1 "mysql-operator/api/v1"
+
 )
 
 type MysqlPrepare struct {
@@ -25,7 +26,7 @@ func (d MysqlPrepare) Delete(evt event.DeleteEvent) bool {
 
 func (d MysqlPrepare) Update(evt event.UpdateEvent) bool {
 	//fmt.Println("Update")
-	return true
+	return false
 }
 
 func (d MysqlPrepare) Generic(evt event.GenericEvent) bool {

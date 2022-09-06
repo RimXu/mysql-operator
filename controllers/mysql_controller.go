@@ -76,40 +76,60 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			// 如果mysqloperator不存在
 			if errors.IsNotFound(err) {
 				// 如果CM/SVC/PVC均不存在，则继续CreateCM/SVC/PVC
-				mcmerr := r.QueryCM(mysqloperator.Namespace,mysqloperator.Name + "-master",ctx)
-				msvcerr := r.QuerySVC(mysqloperator.Namespace,mysqloperator.Name + "-master",ctx)
-				mpvcerr := r.QueryPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",ctx)
-				scmerr := r.QueryCM(mysqloperator.Namespace,mysqloperator.Name + "-slave",ctx)
-				ssvcerr := r.QuerySVC(mysqloperator.Namespace,mysqloperator.Name + "-slave",ctx)
-				spvcerr := r.QueryPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-slave-data",ctx)
+				mcmerr := r.QueryMysqlCM(mysqloperator.Namespace,mysqloperator.Name + "-master",ctx)
+				msvcerr := r.QueryMysqlSVC(mysqloperator.Namespace,mysqloperator.Name + "-master",ctx)
+				mpvcerr := r.QueryMysqlPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",ctx)
+				scmerr := r.QueryMysqlCM(mysqloperator.Namespace,mysqloperator.Name + "-slave",ctx)
+				ssvcerr := r.QueryMysqlSVC(mysqloperator.Namespace,mysqloperator.Name + "-slave",ctx)
+				spvcerr := r.QueryMysqlPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-slave-data",ctx)
+				pcmerr := r.QueryMysqlCM(mysqloperator.Namespace,mysqloperator.Name + "-proxy",ctx)
+				psvcerr := r.QueryProxySVC(mysqloperator.Namespace,mysqloperator.Name + "-proxy", ctx)
+				//icmerr := r.QueryInitCM(mysqloperator.Namespace,mysqloperator.Name + "-init",ctx)
 				if errors.IsNotFound(mcmerr) && errors.IsNotFound(msvcerr) && errors.IsNotFound(mpvcerr) &&
-					errors.IsNotFound(scmerr) && errors.IsNotFound(ssvcerr) && errors.IsNotFound(spvcerr){
-					// CreateCM
-					err = r.CreateCM(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-master","master", combo,ctx)
+					errors.IsNotFound(scmerr) && errors.IsNotFound(ssvcerr) && errors.IsNotFound(spvcerr) &&
+					errors.IsNotFound(pcmerr) && errors.IsNotFound(psvcerr){
+					// Create Mysql CM
+					err = r.CreateMysqlCM(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-master","master", combo,ctx)
 					if err != nil {
-						logrus.Error("CreateCM error",err)
+						logrus.Error("CreateMysqlCM error",err)
 					}
-					err = r.CreateCM(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-slave","slave", combo,ctx)
+					err = r.CreateMysqlCM(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-slave","slave", combo,ctx)
 					if err != nil {
-						logrus.Error("CreateCM error",err)
+						logrus.Error("CreateMysqlCM error",err)
+					}
+					// Create Proxysql CM
+					err = r.CreateProxyCM(mysqloperator,mysqloperator.Namespace,mysqloperator.Name,ctx)
+					if err != nil {
+						logrus.Error("CreateProxyCM error",err)
 					}
 
-					// CreateSVC
-					err = r.CreateSVC(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-master",ctx)
+					// Create Init CM
+					//err = r.CreateInitCM(mysqloperator,mysqloperator.Namespace,mysqloperator.Name,ctx)
+					//if err != nil {
+					//	logrus.Error("CreateProxyCM error",err)
+					//}
+
+					// Create MySQL SVC
+					err = r.CreateMysqlSVC(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-master",ctx)
 					if err != nil {
-						logrus.Error("CreateSVC error",err)
+						logrus.Error("CreateMysqlSVC error",err)
 					}
-					err = r.CreateSVC(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-slave",ctx)
+					err = r.CreateMysqlSVC(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-slave",ctx)
 					if err != nil {
-						logrus.Error("CreateSVC error",err)
+						logrus.Error("CreateMysqlSVC error",err)
+					}
+					// Create Proxy SVC
+					err = r.CreateProxySVC(mysqloperator,mysqloperator.Namespace, mysqloperator.Name + "-proxy", ctx)
+					if err != nil {
+						logrus.Error("CreateProxySVC err",err)
 					}
 
 					// CreatePVC
-					err = r.CreatePVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",size,ctx)
+					err = r.CreateMysqlPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-master-data",size,ctx)
 					if err != nil {
 						logrus.Error("CreatePVC error",err)
 					}
-					err = r.CreatePVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-slave-data",size,ctx)
+					err = r.CreateMysqlPVC(mysqloperator.Namespace,sc,mysqloperator.Name + "-slave-data",size,ctx)
 					if err != nil {
 						logrus.Error("CreatePVC error",err)
 					}
@@ -132,6 +152,12 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				}
 				if err := r.Status().Update(ctx, mysqloperator); err != nil {
 					logrus.Error(err, "MySQL slave status update error")
+				}
+
+				// 创建ProxySQL
+				proxy := r.CreateProxy(mysqloperator)
+				if err = r.Create(context.TODO(), proxy); err != nil {
+					return ctrl.Result{}, err
 				}
 				return ctrl.Result{Requeue: true}, nil
 				}
