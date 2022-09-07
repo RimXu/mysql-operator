@@ -1,16 +1,16 @@
 # MySQL Operator for Kubernetes
 
-## Introduction
+## 实现方式
 
-使用mysql主从作为数据服务，使用proxysql作为应用透明代理，使用job完成初始化配置任务
+使用mysql主从作为数据库，StorageClass作为后端存储，proxysql作为应用透明代理，job完成初始化配置任务
 
-## Pull Requests
+## 代码获取
 
 https://github.com/RimXu/mysql-operator.git
 
-## MySQL Operator for Kubernetes Installation
+## MySQL Operator 安装
 
-### Using Manifest Files with kubectl
+### 使用kubectl安装
 
 1.安装kubebuilder：https://kubebuilder.io/ 
 
@@ -48,7 +48,7 @@ https://github.com/RimXu/mysql-operator.git
 # docker build . -t mysql-operator:0.1
 ```
 
-### Use kubectl deploy to kubernetes 
+### 使用kubectl部署
 示例
 ```yaml
 apiVersion: database.operator.io/v1

@@ -47,6 +47,12 @@ spec:
           spec:
             description: MysqlSpec defines the desired state of Mysql
             properties:
+              databases:
+                items:
+                  additionalProperties:
+                    type: string
+                  type: object
+                type: array
               instance:
                 description: 定义MySQL规格套餐,默认small,只支持small,medium,large三个属性 可以在mysql-operator/pkg/constants中进行修改对应Instance的配置
                 enum:
@@ -64,6 +70,7 @@ spec:
                 format: string
                 type: string
             required:
+            - databases
             - instance
             - replication
             - storageclass

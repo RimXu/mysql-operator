@@ -7,49 +7,50 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
 	mysqlv1 "mysql-operator/api/v1"
 	"mysql-operator/pkg/constants"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // 创建Mysql方法,返回appsv1.deployment类型
 func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance string) *appsv1.Deployment {
 	var replicas int32 = 1
+	mysql_name := m.Name + role
 	cpu := constants.InstanceReflect[instance]["CPU"]
 	memory := constants.InstanceReflect[instance]["Memory"]
 	logrus.Infof("MySQL instance { cpu:%s, memory:%s }", cpu, memory)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name + role,
+			Name:      mysql_name,
 			Namespace: m.Namespace,
 			Labels: map[string]string{
-				"app": m.Name + role,
-				"name":  m.Name + role,
-				"system/appName": m.Name + role,
-				"system/svcName": m.Name + role,
+				"app":            mysql_name,
+				"name":           mysql_name,
+				"system/appName": mysql_name,
+				"system/svcName": mysql_name,
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": m.Name + role,
+					"app": mysql_name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": m.Name + role,
-						"name":  m.Name + role,
-						"system/appName": m.Name + role,
-						"system/svcName": m.Name + role,
+						"app":            mysql_name,
+						"name":           mysql_name,
+						"system/appName": mysql_name,
+						"system/svcName": mysql_name,
 					},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:            m.Name + role,
+							Name:            mysql_name,
 							Image:           constants.Registry_Addr + constants.Mysql_Image,
 							ImagePullPolicy: "IfNotPresent",
 							Args: []string{
@@ -72,25 +73,25 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
-									"cpu" :  resource.MustParse(cpu),
+									"cpu":    resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
 								Requests: corev1.ResourceList{
-									"cpu": resource.MustParse(cpu),
+									"cpu":    resource.MustParse(cpu),
 									"memory": resource.MustParse(memory),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
-									Name: "mysql-data",
+									Name:      "mysql-data",
 									MountPath: "/data",
 								},
 								{
-									Name: "mysql-config",
+									Name:      "mysql-config",
 									MountPath: "/etc/mysql",
 								},
 								{
-									Name: "etc-localtime",
+									Name:      "etc-localtime",
 									MountPath: "/etc/localtime",
 								},
 							},
@@ -110,16 +111,16 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 								ProbeHandler: corev1.ProbeHandler{
 									TCPSocket: &corev1.TCPSocketAction{
 										Port: intstr.IntOrString{
-											Type: 0,
+											Type:   0,
 											IntVal: 3306,
 										},
 									},
 								},
-								TimeoutSeconds: 5,
-								SuccessThreshold: 1,
-								FailureThreshold: 3,
+								TimeoutSeconds:      5,
+								SuccessThreshold:    1,
+								FailureThreshold:    3,
 								InitialDelaySeconds: 15,
-								PeriodSeconds: 30,
+								PeriodSeconds:       30,
 							},
 						},
 						// exporter container
@@ -146,17 +147,17 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
-									"cpu" :  resource.MustParse("500m"),
-									"memory": resource.MustParse("500Mi"),
+									"cpu":    resource.MustParse(constants.Exporter_CPU_lim),
+									"memory": resource.MustParse(constants.Exporter_Mem_lim),
 								},
 								Requests: corev1.ResourceList{
-									"cpu": resource.MustParse("100m"),
-									"memory": resource.MustParse("200Mi"),
+									"cpu":    resource.MustParse(constants.Exporter_CPU_req),
+									"memory": resource.MustParse(constants.Exporter_Mem_req),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
-									Name: "etc-localtime",
+									Name:      "etc-localtime",
 									MountPath: "/etc/localtime",
 								},
 							},
@@ -167,24 +168,24 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 							Name: "mysql-data",
 							VolumeSource: corev1.VolumeSource{
 								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-									ClaimName: m.Name + role + "-data",
+									ClaimName: mysql_name + "-data",
 								},
 							},
 						},
 						{
 							Name: "mysql-config",
 							VolumeSource: corev1.VolumeSource{
-									ConfigMap: &corev1.ConfigMapVolumeSource{
-										LocalObjectReference: corev1.LocalObjectReference{
-											Name: m.Name + role,
-										},
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: mysql_name,
+									},
 									Items: []corev1.KeyToPath{
 										{
-											Key:"my.cnf",
+											Key:  "my.cnf",
 											Path: "my.cnf",
 										},
 										{
-											Key: "init.sh",
+											Key:  "init.sh",
 											Path: "init.sh",
 										},
 									},
@@ -202,7 +203,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 					},
 				},
 			},
-			Strategy:appsv1.DeploymentStrategy{
+			Strategy: appsv1.DeploymentStrategy{
 				Type: "Recreate",
 			},
 		},
@@ -216,9 +217,8 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 	return deployment
 }
 
-
 // 创建proxysql返回deployments类型
-func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) (*appsv1.Deployment,error) {
+func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) (*appsv1.Deployment, error) {
 	prxoy_name := m.Name + "-proxy"
 	var replicas int32 = 2
 	deployment := &appsv1.Deployment{
@@ -263,12 +263,12 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) (*appsv1.Deployment,erro
 							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
-									"cpu":    resource.MustParse("50m"),
-									"memory": resource.MustParse("100Mi"),
+									"cpu":    resource.MustParse(constants.Proxy_CPU_req),
+									"memory": resource.MustParse(constants.Proxy_Mem_req),
 								},
 								Requests: corev1.ResourceList{
-									"cpu":    resource.MustParse("50m"),
-									"memory": resource.MustParse("100Mi"),
+									"cpu":    resource.MustParse(constants.Proxy_CPU_req),
+									"memory": resource.MustParse(constants.Proxy_Mem_req),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
@@ -279,7 +279,7 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) (*appsv1.Deployment,erro
 								{
 									Name:      "proxy-config",
 									MountPath: "/etc/proxysql.cnf",
-									SubPath: "proxysql.cnf",
+									SubPath:   "proxysql.cnf",
 								},
 							},
 							LivenessProbe: &corev1.Probe{
@@ -309,7 +309,7 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) (*appsv1.Deployment,erro
 									},
 									Items: []corev1.KeyToPath{
 										{
-											Key:"proxysql.cnf",
+											Key:  "proxysql.cnf",
 											Path: "proxysql.cnf",
 										},
 									},
@@ -331,11 +331,11 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) (*appsv1.Deployment,erro
 			Strategy: appsv1.DeploymentStrategy{
 				RollingUpdate: &appsv1.RollingUpdateDeployment{
 					MaxUnavailable: &intstr.IntOrString{
-						Type: 1,
+						Type:   1,
 						StrVal: "25%",
 					},
 					MaxSurge: &intstr.IntOrString{
-						Type: 1,
+						Type:   1,
 						StrVal: "25%",
 					},
 				},
@@ -349,6 +349,5 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) (*appsv1.Deployment,erro
 		logrus.Error(err, "ProxySQL created failed", " Name:", deployment.Name, " Namespace:", deployment.Namespace)
 	}
 	logrus.Infof("ProxySQL created successful { name:%s, namespace:%s }", deployment.Name, deployment.Namespace)
-	return deployment,err
+	return deployment, err
 }
-

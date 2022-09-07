@@ -32,4 +32,18 @@ const (
 	Exporter_Reg      = "127.0.0.1"
 )
 
-//
+// 定义Proxysql配置
+const (
+	Proxy_CPU_req = "50m"
+	Proxy_Mem_req = "100Mi"
+	Proxy_CPU_lim = "50m"
+	Proxy_Mem_lim = "100Mi"
+)
+
+// 定义exporter配置
+const (
+	Exporter_CPU_req = "50m"
+	Exporter_Mem_req = "100Mi"
+	Exporter_CPU_lim = "50m"
+	Exporter_Mem_lim = "100Mi"
+)

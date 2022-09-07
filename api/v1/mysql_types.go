@@ -38,6 +38,8 @@ type MysqlSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format:= string
 	StorageClass string `json:"storageclass"`
+	// +kubebuilder:validation:Required
+	Databases []map[string]string `json:"databases"`
 }
 
 // MysqlStatus defines the observed state of Mysql
