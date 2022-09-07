@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The MySQL Operator for Kubernetes is an operator for managing MySQL Cluster 
+使用mysql主从作为数据服务，使用proxysql作为应用透明代理，使用job完成初始化配置任务
 
 ## Pull Requests
 
@@ -48,9 +48,19 @@ https://github.com/RimXu/mysql-operator.git
 # docker build . -t mysql-operator:0.1
 ```
 
-### Use kubectl deploy to kubernetes
-
+### Use kubectl deploy to kubernetes 
 示例
-
+```yaml
+apiVersion: database.operator.io/v1
+kind: Mysql
+metadata:
+  name: mysql-sample
+  namespace: mysql
+spec:
+  # TODO(user): Add fields here
+  replication: true
+  instance: medium
+  storageclass: "nfs-client-storageclass"
+```
 
 
