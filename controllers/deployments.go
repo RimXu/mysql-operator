@@ -1,7 +1,6 @@
 package controllers
 
 import (
-
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -15,11 +14,11 @@ import (
 )
 
 // 创建Mysql方法,返回appsv1.deployment类型
-func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo string) *appsv1.Deployment {
+func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance string) *appsv1.Deployment {
 	var replicas int32 = 1
-	cpu := constants.ComboReflect[combo]["CPU"]
-	memory := constants.ComboReflect[combo]["Memory"]
-	logrus.Infof("MySQL combo { cpu:%s, memory:%s }", cpu, memory)
+	cpu := constants.InstanceReflect[instance]["CPU"]
+	memory := constants.InstanceReflect[instance]["Memory"]
+	logrus.Infof("MySQL instance { cpu:%s, memory:%s }", cpu, memory)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      m.Name + role,
@@ -106,6 +105,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 									},
 								},
 							},
+							// Type 0表示整型
 							LivenessProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									TCPSocket: &corev1.TCPSocketAction{
@@ -134,7 +134,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 							Env: []corev1.EnvVar{
 								{
 									Name:  "DATA_SOURCE_NAME",
-									Value: "exporter:exporterMWF@(localhost:3306)/",
+									Value: constants.Exporter_User + ":" + constants.Exporter_Password + "@(" + constants.Exporter_Reg + ":3306)/",
 								},
 							},
 							Ports: []corev1.ContainerPort{
@@ -202,6 +202,9 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 					},
 				},
 			},
+			Strategy:appsv1.DeploymentStrategy{
+				Type: "Recreate",
+			},
 		},
 	}
 	// 设置deployment的上级控制器
@@ -215,7 +218,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, combo strin
 
 
 // 创建proxysql返回deployments类型
-func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) *appsv1.Deployment {
+func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) (*appsv1.Deployment,error) {
 	prxoy_name := m.Name + "-proxy"
 	var replicas int32 = 2
 	deployment := &appsv1.Deployment{
@@ -324,6 +327,20 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) *appsv1.Deployment {
 					},
 				},
 			},
+			// Type 1表示字符串
+			Strategy: appsv1.DeploymentStrategy{
+				RollingUpdate: &appsv1.RollingUpdateDeployment{
+					MaxUnavailable: &intstr.IntOrString{
+						Type: 1,
+						StrVal: "25%",
+					},
+					MaxSurge: &intstr.IntOrString{
+						Type: 1,
+						StrVal: "25%",
+					},
+				},
+				Type: "RollingUpdate",
+			},
 		},
 	}
 	// 设置deployment的上级控制器
@@ -332,6 +349,6 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) *appsv1.Deployment {
 		logrus.Error(err, "ProxySQL created failed", " Name:", deployment.Name, " Namespace:", deployment.Namespace)
 	}
 	logrus.Infof("ProxySQL created successful { name:%s, namespace:%s }", deployment.Name, deployment.Namespace)
-	return deployment
+	return deployment,err
 }
 

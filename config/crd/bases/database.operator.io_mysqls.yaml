@@ -19,8 +19,8 @@ spec:
     - jsonPath: .spec.replication
       name: Replication
       type: string
-    - jsonPath: .spec.combo
-      name: Combo
+    - jsonPath: .spec.instance
+      name: Instance
       type: string
     - jsonPath: .spec.storageclass
       name: StorageClass
@@ -47,8 +47,8 @@ spec:
           spec:
             description: MysqlSpec defines the desired state of Mysql
             properties:
-              combo:
-                description: 定义MySQL规格套餐,默认small,只支持small,medium,large三个属性 可以在mysql-operator/pkg/constants中进行修改对应combo的配置
+              instance:
+                description: 定义MySQL规格套餐,默认small,只支持small,medium,large三个属性 可以在mysql-operator/pkg/constants中进行修改对应Instance的配置
                 enum:
                 - small
                 - medium
@@ -64,7 +64,7 @@ spec:
                 format: string
                 type: string
             required:
-            - combo
+            - instance
             - replication
             - storageclass
             type: object

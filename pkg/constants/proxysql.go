@@ -1,6 +1,5 @@
 package constants
 
-
 // 可以自定义my.cnf文件,目前只会替换server_id=MYSQL_SERVER_ID和innodb_buffer_pool_size=MYSQL_BUFFER_POOL_SIZE
 // 目前是使用strings.Replace方法替换配置
 // 可以修改mysql-operator/controllers/configmaps中ReadMycnf方法
@@ -26,8 +25,8 @@ mysql_variables=
         stacksize=1048576
         server_version="5.5.30"
         connect_timeout_server=3000
-        monitor_username="monitor"
-        monitor_password="monitor"
+        monitor_username="MONITOR-USER"
+        monitor_password="MONITOR-PASSWORD"
         monitor_history=600000
         monitor_connect_interval=60000
         monitor_ping_interval=10000
@@ -45,7 +44,7 @@ mysql_variables=
 mysql_servers =
 (
     {
-        address ="MYSQL-ADDR-master.NAMESPACE.svc.cili-cluster.tclocal"
+        address ="MYSQL-ADDR-master.NAMESPACE"
         port = 3306
         hostgroup = 1
         weight = 1
@@ -53,7 +52,7 @@ mysql_servers =
         max_replication_lag = 0
         max_connections = 1000
     },
-    {   address ="MYSQL-ADDR-slave.NAMESPACE.svc.cili-cluster.tclocal"
+    {   address ="MYSQL-ADDR-slave.NAMESPACE"
         port = 3306
         hostgroup = 2
         weight = 1
@@ -101,5 +100,3 @@ mysql_replication_hostgroups=
     }
 )
 `
-
-

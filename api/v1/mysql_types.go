@@ -32,9 +32,9 @@ type MysqlSpec struct {
 	// +kubebuilder:validation:Format:= bool
 	Replication bool `json:"replication,true"`
 	// 定义MySQL规格套餐,默认small,只支持small,medium,large三个属性
-	// 可以在mysql-operator/pkg/constants中进行修改对应combo的配置
+	// 可以在mysql-operator/pkg/constants中进行修改对应Instance的配置
 	// +kubebuilder:validation:Enum:= small;medium;large
-	Combo string `json:"combo,small"`
+	Instance string `json:"instance,small"`
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format:= string
 	StorageClass string `json:"storageclass"`
@@ -51,7 +51,7 @@ type MysqlStatus struct {
 //+kubebuilder:subresource:status
 
 // +kubebuilder:printcolumn:name="Replication",type=string,JSONPath=`.spec.replication`
-// +kubebuilder:printcolumn:name="Combo",type=string,JSONPath=`.spec.combo`
+// +kubebuilder:printcolumn:name="Instance",type=string,JSONPath=`.spec.instance`
 // +kubebuilder:printcolumn:name="StorageClass",type=string,JSONPath=`.spec.storageclass`
 // +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
 type Mysql struct {

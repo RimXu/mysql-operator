@@ -26,7 +26,7 @@ func (d MysqlPrepare) Delete(evt event.DeleteEvent) bool {
 
 func (d MysqlPrepare) Update(evt event.UpdateEvent) bool {
 	//fmt.Println("Update")
-	return false
+	return true
 }
 
 func (d MysqlPrepare) Generic(evt event.GenericEvent) bool {
