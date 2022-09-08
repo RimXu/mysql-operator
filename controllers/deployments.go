@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -14,7 +15,7 @@ import (
 )
 
 // 创建Mysql方法,返回appsv1.deployment类型
-func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance string) *appsv1.Deployment {
+func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance string, ctx context.Context) (*appsv1.Deployment, error) {
 	var replicas int32 = 1
 	mysql_name := m.Name + role
 	cpu := constants.InstanceReflect[instance]["CPU"]
@@ -213,12 +214,26 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 	if err != nil {
 		logrus.Error(err, "MySQL created failed", " Name:", deployment.Name, " Namespace:", deployment.Namespace)
 	}
+
+	err = r.Create(context.TODO(), deployment)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	// 更新Mysqloperator状态
+	m.Status.Status = "DeploymentCompleted"
+	if err = r.Status().Update(ctx, m); err != nil {
+		logrus.Error(err, "Operator status update error")
+		return nil, err
+	}
+
 	logrus.Infof("MySQL created successful { name:%s, namespace:%s }", deployment.Name, deployment.Namespace)
-	return deployment
+	return deployment, nil
 }
 
 // 创建proxysql返回deployments类型
-func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) (*appsv1.Deployment, error) {
+func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql, ctx context.Context) (*appsv1.Deployment, error) {
 	prxoy_name := m.Name + "-proxy"
 	var replicas int32 = 2
 	deployment := &appsv1.Deployment{
@@ -348,6 +363,20 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql) (*appsv1.Deployment, err
 	if err != nil {
 		logrus.Error(err, "ProxySQL created failed", " Name:", deployment.Name, " Namespace:", deployment.Namespace)
 	}
+
+	err = r.Create(context.TODO(), deployment)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	// 更新Mysqloperator状态
+	m.Status.Status = "ProxyCompleted"
+	if err = r.Status().Update(ctx, m); err != nil {
+		logrus.Error(err, "Operator status update error")
+		return nil, err
+	}
+
 	logrus.Infof("ProxySQL created successful { name:%s, namespace:%s }", deployment.Name, deployment.Namespace)
 	return deployment, err
 }

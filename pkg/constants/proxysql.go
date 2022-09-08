@@ -67,13 +67,7 @@ mysql_servers =
 # defines all the MySQL users
 mysql_users:
 (
-    {
-        username = "MYSQL-USERNAME"
-        password = "MYSQL-PASSWORD"
-        active = 1
-        max_connections = 1000
-        default_hostgroup = 1
-    }
+MYSQL_USERS
 )
 
 

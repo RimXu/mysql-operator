@@ -11,8 +11,8 @@ const (
 
 // 定义MySQL规格和单位
 var InstanceReflect = map[string]map[string]string{
-	"small":  {"CPU": "100m", "Memory": "400Mi", "Disk": "1Gi"},
-	"medium": {"CPU": "200m", "Memory": "600Mi", "Disk": "2Gi"},
+	"small":  {"CPU": "100m", "Memory": "300Mi", "Disk": "1Gi"},
+	"medium": {"CPU": "200m", "Memory": "500Mi", "Disk": "2Gi"},
 	"large":  {"CPU": "400m", "Memory": "800Mi", "Disk": "3Gi"},
 }
 
