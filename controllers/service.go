@@ -147,11 +147,22 @@ func (r *MysqlReconciler) CreateProxySVC(m *mysqlv1.Mysql, ns string, name strin
 		return err
 	}
 	// 更新Mysqloperator状态
-	m.Status.Status = "ServiceCompleted"
-	if err = r.Status().Update(ctx, m); err != nil {
+	//m.Status.Status = "ServiceCompleted"
+	//if err = r.Status().Update(ctx, m); err != nil {
+	//	logrus.Error(err, "Operator status update error")
+	//	return err
+	//}
+
+	// 更新Mysqloperator状态
+	m.Spec.Phase = "ServiceCompleted"
+	//if err = r.Status().Update(ctx, m); err != nil {
+	//	logrus.Error(err, "Operator status update error")
+	//	return nil, err
+	//}
+	if err := r.Client.Update(ctx, m); err != nil {
 		logrus.Error(err, "Operator status update error")
-		return err
 	}
+
 	logrus.Infof("Proxy service created successful { Namespace : %s, name : %s }", ns, name)
 	return nil
 }

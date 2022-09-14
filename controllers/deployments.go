@@ -7,6 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 	mysqlv1 "mysql-operator/api/v1"
@@ -371,10 +372,13 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql, ctx context.Context) (*a
 	}
 
 	// 更新Mysqloperator状态
-	m.Status.Status = "ProxyCompleted"
-	if err = r.Status().Update(ctx, m); err != nil {
+	m.Spec.Phase = "ProxyCompleted"
+	//if err = r.Status().Update(ctx, m); err != nil {
+	//	logrus.Error(err, "Operator status update error")
+	//	return nil, err
+	//}
+	if err := r.Client.Update(ctx, m); err != nil {
 		logrus.Error(err, "Operator status update error")
-		return nil, err
 	}
 
 	logrus.Infof("ProxySQL created successful { name:%s, namespace:%s }", deployment.Name, deployment.Namespace)

@@ -25,6 +25,7 @@ import (
 
 // MysqlSpec defines the desired state of Mysql
 type MysqlSpec struct {
+
 	// 定义复制配置,默认是true，Operator将生成主从MySQL deployment
 	// 定义字段类型校验
 	// Run "make" and "make install" to regenerate code after modifying this file
@@ -40,22 +41,23 @@ type MysqlSpec struct {
 	StorageClass string `json:"storageclass"`
 	// +kubebuilder:validation:Required
 	Databases []map[string]string `json:"databases"`
+	// +optional
+	Phase string `json:"phase,omitempty"`
 }
 
 // MysqlStatus defines the observed state of Mysql
 type MysqlStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status string `json:"status"`
+	Status string `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Replication",type=string,JSONPath=`.spec.replication`
 // +kubebuilder:printcolumn:name="Instance",type=string,JSONPath=`.spec.instance`
 // +kubebuilder:printcolumn:name="StorageClass",type=string,JSONPath=`.spec.storageclass`
-// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
+// +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.spec.phase`
 type Mysql struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

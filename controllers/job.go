@@ -143,11 +143,22 @@ func (r *MysqlReconciler) CreateRepJob(m *mysqlv1.Mysql, ns string, name string,
 		return err
 	}
 	// 更新Mysqloperator状态
-	m.Status.Status = "JobCreated"
-	if err = r.Status().Update(ctx, m); err != nil {
+	//m.Status.Status = "JobCreated"
+	//if err = r.Status().Update(ctx, m); err != nil {
+	//	logrus.Error(err, "Operator status update error")
+	//	return err
+	//}
+
+	// 更新Mysqloperator状态
+	m.Spec.Phase = "JobCreated"
+	//if err = r.Status().Update(ctx, m); err != nil {
+	//	logrus.Error(err, "Operator status update error")
+	//	return nil, err
+	//}
+	if err := r.Client.Update(ctx, m); err != nil {
 		logrus.Error(err, "Operator status update error")
-		return err
 	}
+
 	logrus.Infof("Job created successful { name:%s, namespace:%s }", job_name, ns)
 	return nil
 }

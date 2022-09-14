@@ -19,5 +19,5 @@ spec:
     - name: mydb2
       user: mydb2
       passwd: mydbPWD2
-      
+
 

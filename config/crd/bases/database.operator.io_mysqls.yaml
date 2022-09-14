@@ -25,8 +25,8 @@ spec:
     - jsonPath: .spec.storageclass
       name: StorageClass
       type: string
-    - jsonPath: .status.status
-      name: Status
+    - jsonPath: .spec.phase
+      name: Phase
       type: string
     name: v1
     schema:
@@ -60,6 +60,8 @@ spec:
                 - medium
                 - large
                 type: string
+              phase:
+                type: string
               replication:
                 description: 定义复制配置,默认是true，Operator将生成主从MySQL deployment 定义字段类型校验
                   Run "make" and "make install" to regenerate code after modifying
@@ -83,8 +85,6 @@ spec:
                   of cluster Important: Run "make" to regenerate code after modifying
                   this file'
                 type: string
-            required:
-            - status
             type: object
         type: object
     served: true
