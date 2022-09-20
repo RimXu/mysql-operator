@@ -104,6 +104,70 @@ func (r *MysqlReconciler) CreateMysqlSVC(m *mysqlv1.Mysql, ns string, name strin
 	return nil
 }
 
+// 创建Single Mysql SVC
+func (r *MysqlReconciler) CreateSingleSVC(m *mysqlv1.Mysql, ns string, name string, ctx context.Context) error {
+	logrus.Infof("Mysql service creating: { namespace:'%s', name:'%s' }", ns, name)
+	optionPVC := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Labels: map[string]string{
+				"name":           name,
+				"system/appName": name,
+				"system/svcName": name,
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:     "tcp-mysql",
+					Protocol: "TCP",
+					Port:     3306,
+					TargetPort: intstr.IntOrString{
+						Type:   0,
+						IntVal: 3306,
+					},
+				},
+				{
+					Name:     "tcp-exporter",
+					Protocol: "TCP",
+					Port:     9104,
+					TargetPort: intstr.IntOrString{
+						Type:   0,
+						IntVal: 9104,
+					},
+				},
+			},
+			Selector: map[string]string{
+				"name": name,
+			},
+			Type:      "ClusterIP",
+		},
+	}
+	// 设置Service的上级控制器
+	err := controllerutil.SetControllerReference(m, optionPVC, r.Scheme)
+	if err != nil {
+		logrus.Errorf("Service set controller failed { namespace:'%s', name:'%s' }", ns, name)
+	}
+
+	err = r.Create(context.TODO(), optionPVC)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+
+	// 更新Mysqloperator状态
+	m.Status.Status = "ServiceCompleted"
+	if err = r.Status().Update(ctx, m); err != nil {
+		logrus.Error(err, "Operator status update error")
+		return err
+	}
+	logrus.Infof("Service created successful { Namespace : %s, name : %s }", ns, name)
+	return nil
+}
+
+
+
 // 创建ProxySQL SVC
 func (r *MysqlReconciler) CreateProxySVC(m *mysqlv1.Mysql, ns string, name string, ctx context.Context) error {
 	logrus.Infof("Proxy service creating: { namespace:'%s', name:'%s' }", ns, name)
