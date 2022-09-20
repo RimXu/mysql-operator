@@ -161,6 +161,47 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				return ctrl.Result{Requeue: true}, nil
 			}
 		}
+	} else if replication == false {
+		err = r.Get(context.TODO(), types.NamespacedName{Name: mysqloperator.Name, Namespace: mysqloperator.Namespace}, mysqldep)
+		if err != nil {
+			// 如果mysqloperator不存在
+			if errors.IsNotFound(err) {
+				cmerr := r.QueryMysqlCM(mysqloperator.Namespace, mysqloperator.Name, ctx)
+				svcerr := r.QueryMysqlSVC(mysqloperator.Namespace, mysqloperator.Name, ctx)
+				pvcerr := r.QueryMysqlPVC(mysqloperator.Namespace, sc, mysqloperator.Name, ctx)
+				if errors.IsNotFound(cmerr) && errors.IsNotFound(svcerr) && errors.IsNotFound(pvcerr)  {
+					err = r.CreateSingleMysqlCM(mysqloperator, mysqloperator.Namespace, mysqloperator.Name, "", instance, ctx)
+					if err != nil {
+						logrus.Error("CreateMysqlCM error", err)
+					}
+					// Create MySQL SVC
+					err = r.CreateSingleSVC(mysqloperator, mysqloperator.Namespace, mysqloperator.Name, ctx)
+					if err != nil {
+						logrus.Error("CreateMysqlSVC error", err)
+					}
+					// CreatePVC
+					err = r.CreateMysqlPVC(mysqloperator.Namespace, sc, mysqloperator.Name+"-data", size, ctx)
+					if err != nil {
+						logrus.Error("CreatePVC error", err)
+					}
+					// 创建MySQL master
+					_, err = r.CreateMysql(mysqloperator, "", instance, ctx)
+					if err != nil {
+						return ctrl.Result{}, err
+					}
+
+					// 创建初始化主从Job
+					for id, db := range databases {
+						args := fmt.Sprintf("%s %s %s;", db["name"], db["user"], db["passwd"])
+						err = r.CreateSingleJob(mysqloperator, mysqloperator.Namespace, mysqloperator.Name, args, strconv.Itoa(id), ctx)
+						if err != nil {
+							return ctrl.Result{}, nil
+						}
+					}
+					return ctrl.Result{}, nil
+				}
+			}
+		}
 	}
 	return ctrl.Result{}, nil
 }

@@ -65,6 +65,41 @@ func (r *MysqlReconciler) CreateMysqlCM(m *mysqlv1.Mysql, ns string, name string
 	return nil
 }
 
+// 创建ConfigMaps,如果不存在则返回错误
+func (r *MysqlReconciler) CreateSingleMysqlCM(m *mysqlv1.Mysql, ns string, name string, role string, instance string, ctx context.Context) error {
+	logrus.Infof("MySQL ConfigMaps creating: { namespace:'%s', name:'%s' }", ns, name)
+	server_id := "11"
+	config_cm, _ := ReadMycnf(constants.MySQLCfg, server_id, FormatBufferpool(constants.InstanceReflect[instance]["Memory"]))
+	init_cm := constants.InitCfg
+	mysql_job :=  constants.MySQLSingleJob
+	optionCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+		Data: map[string]string{
+			"my.cnf":  config_cm,
+			"init.sh": init_cm,
+			"mysqljob.sh":mysql_job,
+		},
+	}
+	// 设置Configmaps的上级控制器
+	err := controllerutil.SetControllerReference(m, optionCM, r.Scheme)
+	if err != nil {
+		logrus.Errorf("MySQL Configmaps set controller failed { namespace:'%s', name:'%s' }", ns, name)
+	}
+
+	err = r.Create(context.TODO(), optionCM)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	logrus.Infof("MySQL ConfigMaps created successful { Namespace : %s, name : %s }", ns, name)
+	return nil
+}
+
+
+
 // 查询ProxySQL ConfigMaps,如果不存在则返回错误
 func (r *MysqlReconciler) QueryProxyCM(ns string, name string, ctx context.Context) error {
 	foundCM := &corev1.ConfigMap{}
