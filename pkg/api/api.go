@@ -7,26 +7,26 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/clientcmd"
-	"os"
-	"path/filepath"
+	//"k8s.io/client-go/tools/clientcmd"
+	//"os"
+	//"path/filepath"
 	mysqlv1 "mysql-operator/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"mysql-operator/pkg/constants"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var gvr = schema.GroupVersionResource{
-	"database.operator.io",
-	"v1",
-	"mysqls",
+	constants.Group,
+	constants.Version,
+	constants.Resource,
 }
 
-func InitDynamic() (dynamic.Interface){
-	kubeconfig := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		panic(err)
-	}
 
+
+
+func InitDynamic() (dynamic.Interface){
+	config := ctrl.GetConfigOrDie()
 	client, err := dynamic.NewForConfig(config)
 	if err != nil {
 		panic(err)
@@ -34,6 +34,7 @@ func InitDynamic() (dynamic.Interface){
 	return client
 }
 
+// 通过配置文件获得权限
 //func InitDynamic() (dynamic.Interface){
 //	kubeconfig := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 //	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
