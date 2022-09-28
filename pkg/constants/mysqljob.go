@@ -24,8 +24,8 @@ func_repl() {
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $m_mysql -e  "CREATE USER IF NOT EXISTS '$EXPORTER_USER'@'127.0.0.1' IDENTIFIED BY '$EXPORTER_PASS' ;"
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $s_mysql -e  "CREATE USER IF NOT EXISTS '$EXPORTER_USER'@'127.0.0.1' IDENTIFIED BY '$EXPORTER_PASS' ;"
 
-    mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $m_mysql -e  "GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '$EXPORTER_USER'@'%' IDENTIFIED  by '$EXPORTER_PASS';"
-    mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $s_mysql -e  "GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '$EXPORTER_USER'@'%' IDENTIFIED  by '$EXPORTER_PASS';"
+    mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $m_mysql -e  "GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '$EXPORTER_USER'@'127.0.0.1' IDENTIFIED  by '$EXPORTER_PASS';"
+    mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $s_mysql -e  "GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '$EXPORTER_USER'@'127.0.0.1' IDENTIFIED  by '$EXPORTER_PASS';"
 
 
     gtid=$(mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $m_mysql -e "show master status \G;" | grep Executed_Gtid_Set|awk '{print $2}')
