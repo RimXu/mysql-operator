@@ -49,7 +49,7 @@ https://github.com/RimXu/mysql-operator.git
 ```
 
 ### 使用kubectl部署
-示例
+示例database_v1_mysql.yaml
 ```yaml
 apiVersion: database.operator.io/v1
 kind: Mysql
@@ -58,9 +58,36 @@ metadata:
   namespace: mysql
 spec:
   # TODO(user): Add fields here
+  # 定义是否需要主从
   replication: true
-  instance: medium
+  # 定义数据库规格,可以在pkg/constants/constants.go中进行修改,再重新构建
+  instance: small
+  # 定义数据库后端存储StorageClass
   storageclass: "nfs-client-storageclass"
+  # 数据库列表
+  databases:
+    - name: mydb1
+      user: mydb1
+      passwd: mydbPWD1
+    - name: mydb2
+      user: mydb2
+      passwd: mydbPWD2
+  # phase有默认值，选填
+  #phase: init
+
+```
+```sh
+kubectl apply -f database_v1_mysql.yaml
 ```
 
+### 使用kubectl查询状态
+```sh
+kubectl get mysqls -n mysql
+NAME           REPLICATION   INSTANCE   STORAGECLASS              PHASE
+mysql-sample   false         small      nfs-client-storageclass   JobRunning
 
+# 当mysql初始化任务完成之后PHASE会变成JobSuccess(或者JobFailed)
+NAME           REPLICATION   INSTANCE   STORAGECLASS              PHASE
+mysql-sample   false         small      nfs-client-storageclass   JobSuccess
+
+```
