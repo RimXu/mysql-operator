@@ -372,13 +372,10 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql, ctx context.Context) (*a
 	}
 
 	// 更新Mysqloperator状态
-	m.Spec.Phase = "ProxyCompleted"
-	//if err = r.Status().Update(ctx, m); err != nil {
-	//	logrus.Error(err, "Operator status update error")
-	//	return nil, err
-	//}
-	if err := r.Client.Update(ctx, m); err != nil {
+	m.Status.Status = "ProxyCompleted"
+	if err = r.Status().Update(ctx, m); err != nil {
 		logrus.Error(err, "Operator status update error")
+		return nil, err
 	}
 
 	logrus.Infof("ProxySQL created successful { name:%s, namespace:%s }", deployment.Name, deployment.Namespace)

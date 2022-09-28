@@ -1,5 +1,13 @@
 package constants
 
+// 定义CRD资源
+const (
+	Group = "database.operator.io"
+	Version = "v1"
+	Resource = "mysqls"
+	Kind = "Mysql"
+)
+
 const (
 	MYSQL_ROOT_PASSWORD = "root1234"
 	// 镜像仓库使用"/"结尾

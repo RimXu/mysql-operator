@@ -42,7 +42,7 @@ func (r *MysqlReconciler) QueryProxySVC(ns string, name string, ctx context.Cont
 }
 
 // 创建Mysql SVC
-func (r *MysqlReconciler) CreateMysqlSVC(m *mysqlv1.Mysql, ns string, name string, ctx context.Context) error {
+func (r *MysqlReconciler) CreateRepMysqlSVC(m *mysqlv1.Mysql, ns string, name string, ctx context.Context) error {
 	logrus.Infof("Mysql service creating: { namespace:'%s', name:'%s' }", ns, name)
 	optionPVC := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -95,11 +95,12 @@ func (r *MysqlReconciler) CreateMysqlSVC(m *mysqlv1.Mysql, ns string, name strin
 	}
 
 	// 更新Mysqloperator状态
-	m.Status.Status = "ServiceCompleted"
-	if err = r.Status().Update(ctx, m); err != nil {
+	m.Spec.Phase = "ServiceCompleted"
+	if err := r.Client.Update(ctx, m); err != nil {
 		logrus.Error(err, "Operator status update error")
 		return err
 	}
+
 	logrus.Infof("Service created successful { Namespace : %s, name : %s }", ns, name)
 	return nil
 }
@@ -141,7 +142,7 @@ func (r *MysqlReconciler) CreateSingleSVC(m *mysqlv1.Mysql, ns string, name stri
 			Selector: map[string]string{
 				"name": name,
 			},
-			Type:      "ClusterIP",
+			Type: "ClusterIP",
 		},
 	}
 	// 设置Service的上级控制器
@@ -168,8 +169,6 @@ func (r *MysqlReconciler) CreateSingleSVC(m *mysqlv1.Mysql, ns string, name stri
 	logrus.Infof("Service created successful { Namespace : %s, name : %s }", ns, name)
 	return nil
 }
-
-
 
 // 创建ProxySQL SVC
 func (r *MysqlReconciler) CreateProxySVC(m *mysqlv1.Mysql, ns string, name string, ctx context.Context) error {
@@ -213,21 +212,11 @@ func (r *MysqlReconciler) CreateProxySVC(m *mysqlv1.Mysql, ns string, name strin
 		logrus.Error(err)
 		return err
 	}
-	// 更新Mysqloperator状态
-	//m.Status.Status = "ServiceCompleted"
-	//if err = r.Status().Update(ctx, m); err != nil {
-	//	logrus.Error(err, "Operator status update error")
-	//	return err
-	//}
 
-	// 更新Mysqloperator状态
 	m.Spec.Phase = "ServiceCompleted"
-	//if err = r.Status().Update(ctx, m); err != nil {
-	//	logrus.Error(err, "Operator status update error")
-	//	return nil, err
-	//}
 	if err := r.Client.Update(ctx, m); err != nil {
 		logrus.Error(err, "Operator status update error")
+		return err
 	}
 
 	logrus.Infof("Proxy service created successful { Namespace : %s, name : %s }", ns, name)

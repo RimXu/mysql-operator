@@ -99,6 +99,7 @@ func main() {
 		logrus.Error(err, "unable to create controller", "controller", "Mysql")
 		os.Exit(1)
 	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

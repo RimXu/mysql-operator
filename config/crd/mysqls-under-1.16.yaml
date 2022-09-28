@@ -1,0 +1,93 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.0
+  creationTimestamp: null
+  name: mysqls.database.operator.io
+spec:
+  group: database.operator.io
+  names:
+    kind: Mysql
+    listKind: MysqlList
+    plural: mysqls
+    singular: mysql
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.replication
+      name: Replication
+      type: string
+    - jsonPath: .spec.instance
+      name: Instance
+      type: string
+    - jsonPath: .spec.storageclass
+      name: StorageClass
+      type: string
+    - jsonPath: .spec.phase
+      name: Phase
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: MysqlSpec defines the desired state of Mysql
+            properties:
+              databases:
+                items:
+                  additionalProperties:
+                    type: string
+                  type: object
+                type: array
+              instance:
+                description: 定义MySQL规格套餐,默认small,只支持small,medium,large三个属性 可以在mysql-operator/pkg/constants中进行修改对应Instance的配置
+                enum:
+                - small
+                - medium
+                - large
+                type: string
+              phase:
+                type: string
+              replication:
+                description: 定义复制配置,默认是true，Operator将生成主从MySQL deployment 定义字段类型校验
+                  Run "make" and "make install" to regenerate code after modifying
+                  this file
+                format: bool
+                type: boolean
+              storageclass:
+                format: string
+                type: string
+            required:
+            - databases
+            - instance
+            - replication
+            - storageclass
+            type: object
+          status:
+            description: MysqlStatus defines the observed state of Mysql
+            properties:
+              status:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "make" to regenerate code after modifying
+                  this file'
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+

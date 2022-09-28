@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	//"sigs.k8s.io/controller-runtime/pkg/source"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -31,8 +32,7 @@ import (
 	"mysql-operator/pkg/constants"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	//apiv1 "k8s.io/api/core/v1"
-	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	batchv1 "k8s.io/api/batch/v1"
 )
 
 // MysqlReconciler reconciles a Mysql object
@@ -89,11 +89,11 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 					errors.IsNotFound(scmerr) && errors.IsNotFound(ssvcerr) && errors.IsNotFound(spvcerr) &&
 					errors.IsNotFound(pcmerr) && errors.IsNotFound(psvcerr) {
 					// Create Mysql CM
-					err = r.CreateMysqlCM(mysqloperator, mysqloperator.Namespace, mysqloperator.Name+"-master", "master", instance, ctx)
+					err = r.CreateRepMysqlCM(mysqloperator, mysqloperator.Namespace, mysqloperator.Name+"-master", "master", instance, ctx)
 					if err != nil {
 						logrus.Error("CreateMysqlCM error", err)
 					}
-					err = r.CreateMysqlCM(mysqloperator, mysqloperator.Namespace, mysqloperator.Name+"-slave", "slave", instance, ctx)
+					err = r.CreateRepMysqlCM(mysqloperator, mysqloperator.Namespace, mysqloperator.Name+"-slave", "slave", instance, ctx)
 					if err != nil {
 						logrus.Error("CreateMysqlCM error", err)
 					}
@@ -104,11 +104,11 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 					}
 
 					// Create MySQL SVC
-					err = r.CreateMysqlSVC(mysqloperator, mysqloperator.Namespace, mysqloperator.Name+"-master", ctx)
+					err = r.CreateRepMysqlSVC(mysqloperator, mysqloperator.Namespace, mysqloperator.Name+"-master", ctx)
 					if err != nil {
 						logrus.Error("CreateMysqlSVC error", err)
 					}
-					err = r.CreateMysqlSVC(mysqloperator, mysqloperator.Namespace, mysqloperator.Name+"-slave", ctx)
+					err = r.CreateRepMysqlSVC(mysqloperator, mysqloperator.Namespace, mysqloperator.Name+"-slave", ctx)
 					if err != nil {
 						logrus.Error("CreateMysqlSVC error", err)
 					}
@@ -206,6 +206,10 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
+
+
+
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *MysqlReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// 定义operator事件过滤
@@ -216,5 +220,9 @@ func (r *MysqlReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		WithEventFilter(e).
 		// 如果关注operator创建的deployment事件,可以使用Owns方法,其他资源可以使用Watch方法
 		Owns(&appsv1.Deployment{}).
+		//Watches(&source.Kind{Type: &batchv1.Job{}}, &MysqlJob{}).
+		Owns(&batchv1.Job{}).
 		Complete(r)
 }
+
+

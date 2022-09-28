@@ -6,9 +6,7 @@ db_name=$1
 db_user=$2
 db_pass=$3
 
-
 func_repl() {
-
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $m_mysql -e  "CREATE USER IF NOT EXISTS '$MONITOR_USER'@'%' IDENTIFIED BY '$MONITOR_PASS';"
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $s_mysql -e  "CREATE USER IF NOT EXISTS '$MONITOR_USER'@'%' IDENTIFIED BY '$MONITOR_PASS';"
 
