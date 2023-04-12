@@ -2,12 +2,13 @@ package constants
 
 // 定义CRD资源
 const (
-	Group = "database.operator.io"
-	Version = "v1"
+	Group    = "database.operator.io"
+	Version  = "v1"
 	Resource = "mysqls"
-	Kind = "Mysql"
+	Kind     = "Mysql"
 )
 
+// 定义镜像
 const (
 	MYSQL_ROOT_PASSWORD = "root1234"
 	// 镜像仓库使用"/"结尾
@@ -19,9 +20,9 @@ const (
 
 // 定义MySQL规格和单位
 var InstanceReflect = map[string]map[string]string{
-	"small":  {"CPU": "100m", "Memory": "300Mi", "Disk": "1Gi"},
-	"medium": {"CPU": "200m", "Memory": "500Mi", "Disk": "2Gi"},
-	"large":  {"CPU": "400m", "Memory": "800Mi", "Disk": "3Gi"},
+	"small":  {"CPU": "100m",  "Memory": "300Mi", "Disk": "1Gi"},
+	"medium": {"CPU": "1000m", "Memory": "4Gi", "Disk": "100Gi"},
+	"large":  {"CPU": "2000m", "Memory": "8Gi", "Disk": "200Gi"},
 }
 
 // 定义数据库用户配置
@@ -54,4 +55,8 @@ const (
 	Exporter_Mem_req = "100Mi"
 	Exporter_CPU_lim = "50m"
 	Exporter_Mem_lim = "100Mi"
+)
+
+const (
+	BaseDir = "/operator_data/"
 )

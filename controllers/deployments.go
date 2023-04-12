@@ -5,22 +5,32 @@ import (
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"k8s.io/apimachinery/pkg/util/intstr"
 	mysqlv1 "mysql-operator/api/v1"
+	"os"
+	"strconv"
+
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"mysql-operator/pkg/constants"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
+
+
+
 
 // 创建Mysql方法,返回appsv1.deployment类型
 func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance string, ctx context.Context) (*appsv1.Deployment, error) {
 	var replicas int32 = 1
 	mysql_name := m.Name + role
-	cpu := constants.InstanceReflect[instance]["CPU"]
-	memory := constants.InstanceReflect[instance]["Memory"]
+	// 从环境变量或者常量中获取配置
+	var mysqlImage, exporterImage,registryAddr,rootPWD string
+	mysqlImage = GetOSEnv("Mysql_Image",constants.Mysql_Image,"")
+	exporterImage = GetOSEnv("Exporter_Image",constants.Exporter_Image,"")
+	registryAddr = GetOSEnv("Registry_Addr", constants.Registry_Addr,"")
+	rootPWD = GetOSEnv("MYSQL_ROOT_PASSWORD",constants.MYSQL_ROOT_PASSWORD,"")
+	cpu := GetOSEnv("Base_CPU",constants.InstanceReflect[instance]["CPU"],instance)
+	memory := GetOSEnv("Base_MEM",constants.InstanceReflect[instance]["MEM"],instance)
 	logrus.Infof("MySQL instance { cpu:%s, memory:%s }", cpu, memory)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -53,7 +63,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 					Containers: []corev1.Container{
 						{
 							Name:            mysql_name,
-							Image:           constants.Registry_Addr + constants.Mysql_Image,
+							Image:           registryAddr + mysqlImage,
 							ImagePullPolicy: "IfNotPresent",
 							Args: []string{
 								"mysqld",
@@ -63,7 +73,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 							Env: []corev1.EnvVar{
 								{
 									Name:  "MYSQL_ROOT_PASSWORD",
-									Value: constants.MYSQL_ROOT_PASSWORD,
+									Value: rootPWD,
 								},
 							},
 							Ports: []corev1.ContainerPort{
@@ -128,7 +138,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 						// exporter container
 						{
 							Name:            "mysql-exporter",
-							Image:           constants.Registry_Addr + constants.Exporter_Image,
+							Image:           registryAddr + exporterImage,
 							ImagePullPolicy: "IfNotPresent",
 							Args: []string{
 								"--collect.binlog_size",
@@ -237,6 +247,9 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql, ctx context.Context) (*appsv1.Deployment, error) {
 	prxoy_name := m.Name + "-proxy"
 	var replicas int32 = 2
+	var proxyImage,registryAddr string
+	proxyImage = GetOSEnv("ProxySQL_Image",constants.ProxySQL_Image,"")
+	registryAddr = GetOSEnv("Registry_Addr",constants.Registry_Addr,"")
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      prxoy_name,
@@ -268,7 +281,7 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql, ctx context.Context) (*a
 					Containers: []corev1.Container{
 						{
 							Name:            prxoy_name,
-							Image:           constants.Registry_Addr + constants.ProxySQL_Image,
+							Image:           registryAddr + proxyImage,
 							ImagePullPolicy: "IfNotPresent",
 							Ports: []corev1.ContainerPort{
 								{
@@ -380,4 +393,79 @@ func (r *MysqlReconciler) CreateProxy(m *mysqlv1.Mysql, ctx context.Context) (*a
 
 	logrus.Infof("ProxySQL created successful { name:%s, namespace:%s }", deployment.Name, deployment.Namespace)
 	return deployment, err
+}
+
+func GetOSEnv(key string, defaultValue string, instance string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	switch key {
+	case "Base_CPU":
+		switch instance {
+		case "small":
+			return os.Getenv(key) + "m"
+		case "medium":
+			num, err := strconv.Atoi(os.Getenv(key))
+			if err != nil {
+				return defaultValue
+			}
+			num *= 2
+			newStr := strconv.Itoa(num) + "m"
+			return newStr
+		case "large":
+			num, err := strconv.Atoi(os.Getenv(key))
+			if err != nil {
+				return defaultValue
+			}
+			num *= 4
+			newStr := strconv.Itoa(num) + "m"
+			return newStr
+		}
+	case "Base_MEM":
+		switch instance {
+		case "small":
+			return os.Getenv(key) + "Mi"
+		case "medium":
+			num, err := strconv.Atoi(os.Getenv(key))
+			if err != nil {
+				return defaultValue
+			}
+			num *= 2
+			newStr := strconv.Itoa(num) + "Mi"
+			return newStr
+		case "large":
+			num, err := strconv.Atoi(os.Getenv(key))
+			if err != nil {
+				return defaultValue
+			}
+			num *= 4
+			newStr := strconv.Itoa(num) + "Mi"
+			return newStr
+		}
+	case "Base_DISK":
+		switch instance {
+		case "small":
+			return os.Getenv(key) + "Gi"
+		case "medium":
+			num, err := strconv.Atoi(os.Getenv(key))
+			if err != nil {
+				return defaultValue
+			}
+			num *= 2
+			newStr := strconv.Itoa(num) + "Gi"
+			return newStr
+		case "large":
+			num, err := strconv.Atoi(os.Getenv(key))
+			if err != nil {
+				return defaultValue
+			}
+			num *= 4
+			newStr := strconv.Itoa(num) + "Gi"
+			return newStr
+		}
+	default:
+		return value
+	}
+	return defaultValue
 }

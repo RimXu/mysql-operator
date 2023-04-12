@@ -70,4 +70,3 @@ done
 echo "INFO: MySQL connects check break"
 
 `
-

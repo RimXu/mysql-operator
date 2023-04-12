@@ -3,12 +3,10 @@ package controllers
 import (
 	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	api "mysql-operator/pkg/api"
 	"mysql-operator/pkg/constants"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 )
-
-
 
 type MysqlPrepare struct {
 }
@@ -26,6 +24,7 @@ func (d MysqlPrepare) Delete(evt event.DeleteEvent) bool {
 	return true
 }
 
+// Watches Job Update事件,通过事件状态更新CRD Spec.phase
 func (d MysqlPrepare) Update(evt event.UpdateEvent) bool {
 	objs := evt.ObjectNew.GetOwnerReferences()
 	for id := range objs {
@@ -48,7 +47,7 @@ func (d MysqlPrepare) Update(evt event.UpdateEvent) bool {
 				} else if job_status_fai > 0 {
 					job_status = "JobFailed"
 				}
-				err := api.UpdateMysqlStatus(job_namespace,job_owner,job_status)
+				err := api.UpdateMysqlStatus(job_namespace, job_owner, job_status)
 				if err != nil {
 					logrus.Errorf("Status update failed: { namespace:'%s', name:'%s' }", job_namespace, job_name)
 				}
@@ -59,10 +58,5 @@ func (d MysqlPrepare) Update(evt event.UpdateEvent) bool {
 }
 
 func (d MysqlPrepare) Generic(evt event.GenericEvent) bool {
-	//fmt.Println("Generic")
 	return false
 }
-
-
-
-

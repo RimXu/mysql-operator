@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	mysqlv1 "mysql-operator/api/v1"
 	"mysql-operator/pkg/constants"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strconv"
 	"strings"
@@ -29,86 +31,40 @@ func (r *MysqlReconciler) QueryMysqlCM(ns string, name string, ctx context.Conte
 	return err
 }
 
-
 // 创建ConfigMaps,如果不存在则返回错误
 func (r *MysqlReconciler) CreateRepMysqlCM(m *mysqlv1.Mysql, ns string, name string, role string, instance string, ctx context.Context) error {
 	logrus.Infof("MySQL ConfigMaps creating: { namespace:'%s', name:'%s' }", ns, name)
-	var server_id string
+	var serverID string
+	var optionCM = &corev1.ConfigMap{}
+	var mysqlConf string
+	var err error
+	var bufferPool = FormatBufferpool(constants.InstanceReflect[instance]["Memory"])
 	if find := strings.Contains(name, "master"); find {
-		server_id = "10"
-		config_cm, _ := ReadMycnf(constants.MySQLCfg, server_id, FormatBufferpool(constants.InstanceReflect[instance]["Memory"]))
-		init_cm := constants.InitCfg
-		optionCM := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: ns,
-			},
-			Data: map[string]string{
-				"my.cnf":  config_cm,
-				"init.sh": init_cm,
-			},
-		}
-		// 设置Configmaps的上级控制器
-		err := controllerutil.SetControllerReference(m, optionCM, r.Scheme)
+		serverID = "10"
+		mysqlConf, err = LoadMysqlConf(serverID,bufferPool)
 		if err != nil {
-			logrus.Errorf("MySQL Configmaps set controller failed { namespace:'%s', name:'%s' }", ns, name)
-		}
-
-		err = r.Create(context.TODO(), optionCM)
-		if err != nil {
-			logrus.Error(err)
 			return err
 		}
 	} else {
-		server_id = "11"
-		config_cm, _ := ReadMycnf(constants.MySQLSlaveCfg, server_id, FormatBufferpool(constants.InstanceReflect[instance]["Memory"]))
-		init_cm := constants.InitCfg
-		optionCM := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: ns,
-			},
-			Data: map[string]string{
-				"my.cnf":  config_cm,
-				"init.sh": init_cm,
-			},
-		}
-		// 设置Configmaps的上级控制器
-		err := controllerutil.SetControllerReference(m, optionCM, r.Scheme)
-		if err != nil {
-			logrus.Errorf("MySQL Configmaps set controller failed { namespace:'%s', name:'%s' }", ns, name)
-		}
-
-		err = r.Create(context.TODO(), optionCM)
-		if err != nil {
-			logrus.Error(err)
-			return err
-		}
+		serverID = "11"
+		mysqlConf, err = LoadMysqlConf(serverID,bufferPool)
 	}
-	logrus.Infof("MySQL ConfigMaps created successful { Namespace : %s, name : %s }", ns, name)
-	return nil
-}
-
-// 创建ConfigMaps,如果不存在则返回错误
-func (r *MysqlReconciler) CreateSingleMysqlCM(m *mysqlv1.Mysql, ns string, name string, role string, instance string, ctx context.Context) error {
-	logrus.Infof("MySQL ConfigMaps creating: { namespace:'%s', name:'%s' }", ns, name)
-	server_id := "11"
-	config_cm, _ := ReadMycnf(constants.MySQLCfg, server_id, FormatBufferpool(constants.InstanceReflect[instance]["Memory"]))
-	init_cm := constants.InitCfg
-	mysql_job :=  constants.MySQLSingleJob
-	optionCM := &corev1.ConfigMap{
+	if err != nil {
+		return err
+	}
+	initCfg := constants.InitCfg
+	optionCM = &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: ns,
 		},
 		Data: map[string]string{
-			"my.cnf":  config_cm,
-			"init.sh": init_cm,
-			"mysqljob.sh":mysql_job,
+			"my.cnf":  mysqlConf,
+			"init.sh": initCfg,
 		},
 	}
 	// 设置Configmaps的上级控制器
-	err := controllerutil.SetControllerReference(m, optionCM, r.Scheme)
+	err = controllerutil.SetControllerReference(m, optionCM, r.Scheme)
 	if err != nil {
 		logrus.Errorf("MySQL Configmaps set controller failed { namespace:'%s', name:'%s' }", ns, name)
 	}
@@ -122,7 +78,41 @@ func (r *MysqlReconciler) CreateSingleMysqlCM(m *mysqlv1.Mysql, ns string, name 
 	return nil
 }
 
+// 创建ConfigMaps,如果不存在则返回错误
+func (r *MysqlReconciler) CreateSingleMysqlCM(m *mysqlv1.Mysql, ns string, name string, role string, instance string, ctx context.Context) error {
+	logrus.Infof("MySQL ConfigMaps creating: { namespace:'%s', name:'%s' }", ns, name)
+	serverID := "10"
+	mysqlConf, err := LoadMysqlConf(serverID,FormatBufferpool(constants.InstanceReflect[instance]["Memory"]))
+	if err != nil {
+		return err
+	}
+	initCfg := constants.InitCfg
+	mysqlJob := constants.MySQLSingleJob
+	optionCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+		Data: map[string]string{
+			"my.cnf":      mysqlConf,
+			"init.sh":     initCfg,
+			"mysqljob.sh": mysqlJob,
+		},
+	}
+	// 设置Configmaps的上级控制器
+	err = controllerutil.SetControllerReference(m, optionCM, r.Scheme)
+	if err != nil {
+		logrus.Errorf("MySQL Configmaps set controller failed { namespace:'%s', name:'%s' }", ns, name)
+	}
 
+	err = r.Create(context.TODO(), optionCM)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	logrus.Infof("MySQL ConfigMaps created successful { Namespace : %s, name : %s }", ns, name)
+	return nil
+}
 
 // 查询ProxySQL ConfigMaps,如果不存在则返回错误
 func (r *MysqlReconciler) QueryProxyCM(ns string, name string, ctx context.Context) error {
@@ -204,6 +194,7 @@ func FormatBufferpool(m string) string {
 }
 
 // 格式化Mysql配置文件
+// 使用ini包生成结构体方法，替换此函数
 func ReadMycnf(s string, id string, buffer string) (string, error) {
 	cfg1 := strings.Replace(s, "MYSQL_SERVER_ID", id, -1)
 	cfg2 := strings.Replace(cfg1, "MYSQL_BUFFER_POOL_SIZE", buffer, -1)
@@ -239,4 +230,52 @@ func FormatMysqlusers(databases []map[string]string) string {
 		dbs = dbs + cfg2
 	}
 	return dbs
+}
+
+// 构建mysql my.cnf配置文件
+func LoadMysqlConf(serverid string,bufferpool string) (string, error) {
+	var myFile string
+	myFile = constants.BaseDir + "my.cnf"
+	file, err := os.Open(myFile)
+	bufferSize := "innodb_buffer_pool_size=" + bufferpool
+	replacements := map[string]string{
+		"read-only=0": "read-only=1",
+		"server_id=10": "server_id=11",
+		"innodb_buffer_pool_size=500M": bufferSize,
+	}
+	if err != nil {
+		logrus.Warn("MySQL ConfigMaps Use constants.MySQLCfg")
+		if serverid == "10" {
+			output := strings.Replace(constants.MySQLCfg, "innodb_buffer_pool_size=500M", bufferSize, -1)
+			return output,nil
+		} else if serverid == "11" {
+			input := constants.MySQLCfg
+
+			output := input
+			for oldstr, newstr := range replacements {
+				output = strings.Replace(output, oldstr, newstr, -1)
+			}
+			return output,nil
+		}
+	}
+	defer file.Close()
+	contentBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		logrus.Error("MySQL ConfigMaps use constants.MySQLCfg because of read file failed")
+		return constants.MySQLCfg,nil
+	}
+	input := string(contentBytes)
+	logrus.Warn("MySQL ConfigMaps Use Manul Config")
+	if serverid == "10" {
+		output := strings.Replace(constants.MySQLCfg, "innodb_buffer_pool_size=500M", bufferSize, -1)
+		return output,nil
+	} else if serverid == "11" {
+		output := input
+		for oldstr, newstr := range replacements {
+			output = strings.Replace(output, oldstr, newstr, -1)
+		}
+
+		return output,nil
+	}
+	return constants.MySQLCfg,nil
 }

@@ -2,13 +2,13 @@ apiVersion: database.operator.io/v1
 kind: Mysql
 metadata:
   # MySQL operator名称和命名空间
-  name: mysql-sample
+  name: v1-small
   namespace: mysql
 spec:
   # 定义MySQL是否需要主从，必选
   replication: true
   # 定义MySQL实例规格,可以在constants.InstanceReflect中定义
-  instance: medium
+  instance: small
   # 定义MySQL存储后端Storageclass
   storageclass: "nfs-client-storageclass"
   # 数据库列表,支持多数据库多用户

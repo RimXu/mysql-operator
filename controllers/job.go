@@ -153,8 +153,6 @@ func (r *MysqlReconciler) CreateRepJob(m *mysqlv1.Mysql, ns string, name string,
 	return nil
 }
 
-
-
 // 创建Single MySQL初始化job
 func (r *MysqlReconciler) CreateSingleJob(m *mysqlv1.Mysql, ns string, name string, database string, id string, ctx context.Context) error {
 	job_name := name + "-job-" + id
@@ -282,7 +280,6 @@ func (r *MysqlReconciler) CreateSingleJob(m *mysqlv1.Mysql, ns string, name stri
 		return err
 	}
 
-
 	m.Spec.Phase = "JobCreated"
 	if err := r.Client.Update(ctx, m); err != nil {
 		logrus.Error(err, "Operator status update error")
@@ -293,11 +290,10 @@ func (r *MysqlReconciler) CreateSingleJob(m *mysqlv1.Mysql, ns string, name stri
 	return nil
 }
 
-
-func (r MysqlReconciler) UpdateSpecStatus(ctx context.Context, m *mysqlv1.Mysql) error {
-	if err := r.Client.Update(ctx, m); err != nil {
-		logrus.Error(err, "Operator status update error")
-		return err
-	}
-	return nil
-}
+//func (r MysqlReconciler) UpdateSpecStatus(ctx context.Context, m *mysqlv1.Mysql) error {
+//	if err := r.Client.Update(ctx, m); err != nil {
+//		logrus.Error(err, "Operator status update error")
+//		return err
+//	}
+//	return nil
+//}

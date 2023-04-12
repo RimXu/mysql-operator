@@ -16,9 +16,12 @@ no-auto-rehash
 
 [mysqld]
 #server_setting
+# read-only Modify not allowed
+read-only=0
 skip-ssl
 port=3306
-server_id=MYSQL_SERVER_ID
+# server_id Modify not allowed
+server_id=10
 back_log=1024
 slow_query_log=1
 long_query_time=3
@@ -96,7 +99,8 @@ innodb_old_blocks_time=1000
 innodb_max_dirty_pages_pct=60
 innodb_flush_method=O_DIRECT
 innodb_change_buffering=all
-innodb_buffer_pool_size=MYSQL_BUFFER_POOL_SIZE
+# innodb_buffer_pool_size Modify not allow in my.cnf
+innodb_buffer_pool_size=500M 
 innodb_data_file_path=ibdata1:16M:autoextend
 innodb_file_per_table=1
 
@@ -125,7 +129,6 @@ slave-parallel-type=LOGICAL_CLOCK
 slave-parallel-workers=8
 
 `
-
 
 const MySQLSlaveCfg = `[client]
 port=3306
@@ -250,3 +253,4 @@ slave-parallel-type=LOGICAL_CLOCK
 slave-parallel-workers=8
 
 `
+

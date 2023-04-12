@@ -46,6 +46,7 @@ type MysqlSpec struct {
 }
 
 // MysqlStatus defines the observed state of Mysql
+// 由于公司使用k8s版本较老,启用和更新status状态存在问题,所以Operator全部使用spec.phase作为状态列
 type MysqlStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
@@ -54,10 +55,12 @@ type MysqlStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Replication",type=string,JSONPath=`.spec.replication`
+// +kubebuilder:printcolumn:name="Replication",type= string,JSONPath=`.spec.replication`
 // +kubebuilder:printcolumn:name="Instance",type=string,JSONPath=`.spec.instance`
 // +kubebuilder:printcolumn:name="StorageClass",type=string,JSONPath=`.spec.storageclass`
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.spec.phase`
+// +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
+
 type Mysql struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

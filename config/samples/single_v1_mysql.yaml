@@ -1,0 +1,23 @@
+apiVersion: database.operator.io/v1
+kind: Mysql
+metadata:
+  # MySQL operator名称和命名空间
+  name: single
+  namespace: mysql
+spec:
+  # 定义MySQL是否需要主从，必选
+  replication: false
+  # 定义MySQL实例规格,可以在constants.InstanceReflect中定义
+  instance: large
+  # 定义MySQL存储后端Storageclass
+  storageclass: "nfs-client-storageclass"
+  # 数据库列表,支持多数据库多用户
+  databases:
+    - name: mydb1
+      user: mydb1
+      passwd: mydbPWD1
+    - name: mydb2
+      user: mydb2
+      passwd: mydbPWD2
+
+

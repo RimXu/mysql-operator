@@ -26,13 +26,13 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	//"k8s.io/apimachinery/pkg/api/resource"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	mysqlv1 "mysql-operator/api/v1"
 	"mysql-operator/pkg/constants"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	batchv1 "k8s.io/api/batch/v1"
 )
 
 // MysqlReconciler reconciles a Mysql object
@@ -67,7 +67,7 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	sc := mysqloperator.Spec.StorageClass
 	replication := mysqloperator.Spec.Replication
 	databases := mysqloperator.Spec.Databases
-	size := constants.InstanceReflect[instance]["Disk"]
+	size := GetOSEnv("Base_DISK",constants.InstanceReflect[instance]["Disk"],instance)
 
 	//判断是否需要创建MySQL主从主从
 	if replication == true {
@@ -169,7 +169,7 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				cmerr := r.QueryMysqlCM(mysqloperator.Namespace, mysqloperator.Name, ctx)
 				svcerr := r.QueryMysqlSVC(mysqloperator.Namespace, mysqloperator.Name, ctx)
 				pvcerr := r.QueryMysqlPVC(mysqloperator.Namespace, sc, mysqloperator.Name, ctx)
-				if errors.IsNotFound(cmerr) && errors.IsNotFound(svcerr) && errors.IsNotFound(pvcerr)  {
+				if errors.IsNotFound(cmerr) && errors.IsNotFound(svcerr) && errors.IsNotFound(pvcerr) {
 					err = r.CreateSingleMysqlCM(mysqloperator, mysqloperator.Namespace, mysqloperator.Name, "", instance, ctx)
 					if err != nil {
 						logrus.Error("CreateMysqlCM error", err)
@@ -190,7 +190,7 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 						return ctrl.Result{}, err
 					}
 
-					// 创建初始化主从Job
+					// 创建初始化single db Job
 					for id, db := range databases {
 						args := fmt.Sprintf("%s %s %s;", db["name"], db["user"], db["passwd"])
 						err = r.CreateSingleJob(mysqloperator, mysqloperator.Namespace, mysqloperator.Name, args, strconv.Itoa(id), ctx)
@@ -206,10 +206,6 @@ func (r *MysqlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
-
-
-
-
 // SetupWithManager sets up the controller with the Manager.
 func (r *MysqlReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// 定义operator事件过滤
@@ -224,5 +220,3 @@ func (r *MysqlReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&batchv1.Job{}).
 		Complete(r)
 }
-
-
