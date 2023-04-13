@@ -38,7 +38,7 @@ func (r *MysqlReconciler) CreateRepMysqlCM(m *mysqlv1.Mysql, ns string, name str
 	var optionCM = &corev1.ConfigMap{}
 	var mysqlConf string
 	var err error
-	var bufferPool = FormatBufferpool(constants.InstanceReflect[instance]["Memory"])
+	var bufferPool = FormatBufferpool(GetOSEnv("Base_MEM",constants.InstanceReflect[instance]["Memory"],instance))
 	if find := strings.Contains(name, "master"); find {
 		serverID = "10"
 		mysqlConf, err = LoadMysqlConf(serverID,bufferPool)
@@ -82,7 +82,8 @@ func (r *MysqlReconciler) CreateRepMysqlCM(m *mysqlv1.Mysql, ns string, name str
 func (r *MysqlReconciler) CreateSingleMysqlCM(m *mysqlv1.Mysql, ns string, name string, role string, instance string, ctx context.Context) error {
 	logrus.Infof("MySQL ConfigMaps creating: { namespace:'%s', name:'%s' }", ns, name)
 	serverID := "10"
-	mysqlConf, err := LoadMysqlConf(serverID,FormatBufferpool(constants.InstanceReflect[instance]["Memory"]))
+	var bufferPool = FormatBufferpool(GetOSEnv("Base_MEM",constants.InstanceReflect[instance]["Memory"],instance))
+	mysqlConf, err := LoadMysqlConf(serverID,bufferPool)
 	if err != nil {
 		return err
 	}
@@ -267,7 +268,7 @@ func LoadMysqlConf(serverid string,bufferpool string) (string, error) {
 	input := string(contentBytes)
 	logrus.Warn("MySQL ConfigMaps Use Manul Config")
 	if serverid == "10" {
-		output := strings.Replace(constants.MySQLCfg, "innodb_buffer_pool_size=500M", bufferSize, -1)
+		output := strings.Replace(input, "innodb_buffer_pool_size=500M", bufferSize, -1)
 		return output,nil
 	} else if serverid == "11" {
 		output := input

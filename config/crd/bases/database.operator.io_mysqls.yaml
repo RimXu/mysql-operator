@@ -28,6 +28,9 @@ spec:
     - jsonPath: .spec.phase
       name: Phase
       type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
     name: v1
     schema:
       openAPIV3Schema:
@@ -78,7 +81,7 @@ spec:
             - storageclass
             type: object
           status:
-            description: MysqlStatus defines the observed state of Mysql
+            description: MysqlStatus defines the observed state of Mysql 由于公司使用k8s版本较老,启用和更新status状态存在问题,所以Operator全部使用spec.phase作为状态列
             properties:
               status:
                 description: 'INSERT ADDITIONAL STATUS FIELD - define observed state

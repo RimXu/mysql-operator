@@ -46,7 +46,8 @@ do
     m_status=$?
     echo INFO: MySQL status:$m_status
     if [ $m_status -eq 0 ];then
-        echo "INFO: MySQL connects successful"
+        echo "INFO: MySQL connects successful sleep 10"
+		sleep 10
         repl_conn=$(mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $m_mysql --connect-timeout=1 -e "select user,host from mysql.user;")
         repl_exists=$(echo $repl_conn|grep $MONITOR_USER|wc -l)
         if [ $repl_exists -eq 0 ];then

@@ -30,7 +30,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 	registryAddr = GetOSEnv("Registry_Addr", constants.Registry_Addr,"")
 	rootPWD = GetOSEnv("MYSQL_ROOT_PASSWORD",constants.MYSQL_ROOT_PASSWORD,"")
 	cpu := GetOSEnv("Base_CPU",constants.InstanceReflect[instance]["CPU"],instance)
-	memory := GetOSEnv("Base_MEM",constants.InstanceReflect[instance]["MEM"],instance)
+	memory := GetOSEnv("Base_MEM",constants.InstanceReflect[instance]["Memory"],instance)
 	logrus.Infof("MySQL instance { cpu:%s, memory:%s }", cpu, memory)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
