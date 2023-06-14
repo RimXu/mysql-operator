@@ -13,14 +13,14 @@ const (
 	MYSQL_ROOT_PASSWORD = "root1234"
 	// 镜像仓库使用"/"结尾
 	Registry_Addr  = "10.198.140.35/kce/"
-	Mysql_Image    = "mysql:5.7.35"
+	//Mysql_Image    = "mysql:5.7.35"
 	Exporter_Image = "mysqld-exporter:v0.12.1"
 	ProxySQL_Image = "proxysql:2.2.2"
 )
 
 // 定义MySQL规格和单位
 var InstanceReflect = map[string]map[string]string{
-	"small":  {"CPU": "100m",  "Memory": "300Mi", "Disk": "1Gi"},
+	"small":  {"CPU": "500m",  "Memory": "2Gi", "Disk": "50Gi"},
 	"medium": {"CPU": "1000m", "Memory": "4Gi", "Disk": "100Gi"},
 	"large":  {"CPU": "2000m", "Memory": "8Gi", "Disk": "200Gi"},
 }

@@ -41,6 +41,8 @@ type MysqlSpec struct {
 	StorageClass string `json:"storageclass"`
 	// +kubebuilder:validation:Required
 	Databases []map[string]string `json:"databases"`
+	// +kubebuilder:validation:Required
+	Version string `json:"version,mysql:5.7.35"`
 	// +optional
 	Phase string `json:"phase,omitempty"`
 }
@@ -58,6 +60,7 @@ type MysqlStatus struct {
 // +kubebuilder:printcolumn:name="Replication",type= string,JSONPath=`.spec.replication`
 // +kubebuilder:printcolumn:name="Instance",type=string,JSONPath=`.spec.instance`
 // +kubebuilder:printcolumn:name="StorageClass",type=string,JSONPath=`.spec.storageclass`
+// +kubebuilder:printcolumn:name="Version",type=string,JSONPath=`.spec.version`
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.spec.phase`
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 

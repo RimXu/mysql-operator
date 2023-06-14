@@ -18,14 +18,10 @@ func (r *MysqlReconciler) CreateRepJob(m *mysqlv1.Mysql, ns string, name string,
 	args := []string{
 		"/bin/sh",
 		"-c",
-		"/etc/mysql/mysqljob.sh " + database,
+		"/etc/mysqljob.sh " + database,
 	}
 	logrus.Infof("Job creating: { namespace:'%s', name:'%s' }", ns, job_name)
-	//args = ["/bin/sh", "-c"]
-	//for _,db := range databases {
-	//	sh := fmt.Sprintf("/etc/mysql/mysqljob.sh %s %s %s;",db["name"],db["user"],db["passwd"])
-	//	db_argss = append(db_argss,sh)
-	//}
+	var mysqlImage string = m.Spec.Version
 	var activeDeadlineSeconds int64 = 900
 	var backoffLimit int32 = 3
 	var defaultMode int32 = 0755
@@ -46,7 +42,7 @@ func (r *MysqlReconciler) CreateRepJob(m *mysqlv1.Mysql, ns string, name string,
 					Containers: []corev1.Container{
 						{
 							Name:            job_name,
-							Image:           constants.Registry_Addr + constants.Mysql_Image,
+							Image:           constants.Registry_Addr + mysqlImage,
 							ImagePullPolicy: "IfNotPresent",
 							Args:            args,
 							Env: []corev1.EnvVar{
@@ -90,7 +86,8 @@ func (r *MysqlReconciler) CreateRepJob(m *mysqlv1.Mysql, ns string, name string,
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "mysql-config",
-									MountPath: "/etc/mysql",
+									MountPath: "/etc/mysqljob.sh",
+									SubPath: "mysqljob.sh",
 								},
 								{
 									Name:      "etc-localtime",
@@ -162,11 +159,7 @@ func (r *MysqlReconciler) CreateSingleJob(m *mysqlv1.Mysql, ns string, name stri
 		"/etc/mysql/mysqljob.sh " + database,
 	}
 	logrus.Infof("Job creating: { namespace:'%s', name:'%s' }", ns, job_name)
-	//args = ["/bin/sh", "-c"]
-	//for _,db := range databases {
-	//	sh := fmt.Sprintf("/etc/mysql/mysqljob.sh %s %s %s;",db["name"],db["user"],db["passwd"])
-	//	db_argss = append(db_argss,sh)
-	//}
+	var mysqlImage string = m.Spec.Version
 	var activeDeadlineSeconds int64 = 900
 	var backoffLimit int32 = 3
 	var defaultMode int32 = 0755
@@ -187,7 +180,7 @@ func (r *MysqlReconciler) CreateSingleJob(m *mysqlv1.Mysql, ns string, name stri
 					Containers: []corev1.Container{
 						{
 							Name:            job_name,
-							Image:           constants.Registry_Addr + constants.Mysql_Image,
+							Image:           constants.Registry_Addr + mysqlImage,
 							ImagePullPolicy: "IfNotPresent",
 							Args:            args,
 							Env: []corev1.EnvVar{

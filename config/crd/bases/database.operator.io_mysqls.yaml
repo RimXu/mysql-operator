@@ -25,6 +25,9 @@ spec:
     - jsonPath: .spec.storageclass
       name: StorageClass
       type: string
+    - jsonPath: .spec.version
+      name: Version
+      type: string
     - jsonPath: .spec.phase
       name: Phase
       type: string
@@ -74,11 +77,14 @@ spec:
               storageclass:
                 format: string
                 type: string
+              version:
+                type: string
             required:
             - databases
             - instance
             - replication
             - storageclass
+            - version
             type: object
           status:
             description: MysqlStatus defines the observed state of Mysql 由于公司使用k8s版本较老,启用和更新status状态存在问题,所以Operator全部使用spec.phase作为状态列

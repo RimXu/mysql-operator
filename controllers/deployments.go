@@ -22,10 +22,12 @@ import (
 // 创建Mysql方法,返回appsv1.deployment类型
 func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance string, ctx context.Context) (*appsv1.Deployment, error) {
 	var replicas int32 = 1
+	var defaultmode int32 = 0755
+	modePtr := &defaultmode
 	mysql_name := m.Name + role
 	// 从环境变量或者常量中获取配置
 	var mysqlImage, exporterImage,registryAddr,rootPWD string
-	mysqlImage = GetOSEnv("Mysql_Image",constants.Mysql_Image,"")
+	mysqlImage = m.Spec.Version
 	exporterImage = GetOSEnv("Exporter_Image",constants.Exporter_Image,"")
 	registryAddr = GetOSEnv("Registry_Addr", constants.Registry_Addr,"")
 	rootPWD = GetOSEnv("MYSQL_ROOT_PASSWORD",constants.MYSQL_ROOT_PASSWORD,"")
@@ -60,6 +62,29 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 					},
 				},
 				Spec: corev1.PodSpec{
+					InitContainers: []corev1.Container{
+						{
+							Name:	"mysql-init-ct",
+							Image:           registryAddr + mysqlImage,
+							ImagePullPolicy: "IfNotPresent",
+							Command: []string{
+								"/bin/sh",
+								"-c",
+								"/etc/init.sh",
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "mysql-data",
+									MountPath: "/data",
+								},
+								{
+									Name:      "mysql-config",
+									MountPath: "/etc/init.sh",
+									SubPath:   "init.sh",
+								},
+							},
+						},
+					},
 					Containers: []corev1.Container{
 						{
 							Name:            mysql_name,
@@ -67,7 +92,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 							ImagePullPolicy: "IfNotPresent",
 							Args: []string{
 								"mysqld",
-								"--defaults-file=/etc/mysql/my.cnf",
+								"--defaults-file=/etc/my.cnf",
 								"--user=mysql",
 							},
 							Env: []corev1.EnvVar{
@@ -100,24 +125,30 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 								},
 								{
 									Name:      "mysql-config",
-									MountPath: "/etc/mysql",
+									MountPath: "/etc/my.cnf",
+									SubPath:   "my.cnf",
 								},
+								//{
+								//	Name:      "mysql-config",
+								//	MountPath: "/etc/init.sh",
+								//	SubPath:   "init.sh",
+								//},
 								{
 									Name:      "etc-localtime",
 									MountPath: "/etc/localtime",
 								},
 							},
-							Lifecycle: &corev1.Lifecycle{
-								PostStart: &corev1.LifecycleHandler{
-									Exec: &corev1.ExecAction{
-										Command: []string{
-											"/bin/sh",
-											"-c",
-											"sh /etc/mysql/init.sh",
-										},
-									},
-								},
-							},
+							//Lifecycle: &corev1.Lifecycle{
+							//	PostStart: &corev1.LifecycleHandler{
+							//		Exec: &corev1.ExecAction{
+							//			Command: []string{
+							//				"/bin/sh",
+							//				"-c",
+							//				"sh /etc/init.sh",
+							//			},
+							//		},
+							//	},
+							//},
 							// Type 0表示整型
 							LivenessProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
@@ -201,6 +232,7 @@ func (r *MysqlReconciler) CreateMysql(m *mysqlv1.Mysql, role string, instance st
 											Path: "init.sh",
 										},
 									},
+									DefaultMode: modePtr,
 								},
 							},
 						},

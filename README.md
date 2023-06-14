@@ -2,7 +2,8 @@
 
 ## 实现方式
 
-使用mysql主从作为数据库，StorageClass作为后端存储，proxysql作为应用透明代理，job完成初始化配置任务
+使用mysql主从作为数据库，StorageClass作为后端存储，proxysql作为应用透明代理，job完成初始化配置任务，
+支持mysql5.7和mysql8.0
 
 ## 代码获取
 
@@ -49,22 +50,28 @@ https://github.com/RimXu/mysql-operator.git
 ```
 
 ### 使用kubectl部署
-示例database_v1_mysql.yaml
+示例database_v2_mysql.yaml
 ```yaml
 apiVersion: database.operator.io/v1
 kind: Mysql
 metadata:
-  name: mysql-sample
+  # MySQL operator名称和命名空间
+  name: mysql-v8
   namespace: mysql
 spec:
-  # TODO(user): Add fields here
-  # 定义是否需要主从
+  # 定义MySQL是否需要主从，必选
   replication: true
-  # 定义数据库规格,可以在pkg/constants/constants.go中进行修改,再重新构建
-  instance: small
-  # 定义数据库后端存储StorageClass
+  # 定义MySQL实例规格,可以在constants.InstanceReflect中定义
+  # 也可以通过环境变量配置Base_MEM/Base_CPU定义基数,small/medium/large分别是1倍、2倍、4倍基数
+  # Base_MEM单位是Mi
+  # Base_CPU单位是m
+  instance: medium
+  # 定义MySQL存储后端Storageclass
   storageclass: "nfs-client-storageclass"
-  # 数据库列表
+  # 数据库版本定义：与镜像的名称相同
+  # 镜像仓库地址可以通过Registry_Addr设置
+  version: mysql:8.0.33
+  # 数据库列表,支持多数据库多用户
   databases:
     - name: mydb1
       user: mydb1
@@ -72,8 +79,7 @@ spec:
     - name: mydb2
       user: mydb2
       passwd: mydbPWD2
-  # phase有默认值，选填
-  #phase: init
+
 
 ```
 ```sh

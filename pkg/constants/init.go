@@ -7,5 +7,7 @@ if [ ! -d "/data/3306/data" ]; then
     mkdir -p /data/3306/share
     mkdir -p /data/3306/data
 	chown mysql:mysql -R /data/
+	echo "init completed"
 fi
+echo "init pass"
 `
