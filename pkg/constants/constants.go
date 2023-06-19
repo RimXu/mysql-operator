@@ -44,9 +44,9 @@ const (
 // 定义Proxysql配置
 const (
 	Proxy_CPU_req = "50m"
-	Proxy_Mem_req = "100Mi"
+	Proxy_Mem_req = "150Mi"
 	Proxy_CPU_lim = "50m"
-	Proxy_Mem_lim = "100Mi"
+	Proxy_Mem_lim = "150Mi"
 )
 
 // 定义exporter配置

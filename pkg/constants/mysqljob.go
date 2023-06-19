@@ -49,7 +49,7 @@ func_repl() {
 
 
 func_app() {
-    mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $m_mysql --get-server-public-key -e  "CREATE USER IF NOT EXISTS '$db_user'@'%' WITH mysql_native_password IDENTIFIED BY '$db_pass';"
+    mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $m_mysql --get-server-public-key -e  "CREATE USER IF NOT EXISTS '$db_user'@'%' IDENTIFIED WITH mysql_native_password BY '$db_pass';"
 	mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $m_mysql --get-server-public-key -e  "CREATE DATABASE IF NOT EXISTS $db_name;"
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -h $m_mysql --get-server-public-key -e  "GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'@'%';"
 }
